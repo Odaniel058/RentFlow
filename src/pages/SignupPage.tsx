@@ -50,7 +50,7 @@ const SignupPage: React.FC = () => {
     setError("");
     try {
       await signup({ name, company, email, password, seedMode });
-      toast.success("Conta criada com sucesso! Bem-vindo ao CineGear.");
+      toast.success("Conta criada com sucesso! Bem-vindo ao RentFlow.");
       navigate("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Não foi possível criar a conta.";
@@ -102,7 +102,7 @@ const SignupPage: React.FC = () => {
             >
               <Film className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
             </motion.div>
-            <span className="font-display font-bold text-lg">CineGear</span>
+            <span className="font-display font-bold text-lg">RentFlow</span>
           </Link>
 
           <div className="space-y-8 max-w-xs">
@@ -146,7 +146,7 @@ const SignupPage: React.FC = () => {
             </motion.div>
           </div>
 
-          <p className="text-xs text-muted-foreground/50">© {new Date().getFullYear()} CineGear</p>
+          <p className="text-xs text-muted-foreground/50">© {new Date().getFullYear()} RentFlow</p>
         </div>
       </div>
 
@@ -164,7 +164,7 @@ const SignupPage: React.FC = () => {
             <div className="w-9 h-9 rounded-xl gradient-gold flex items-center justify-center">
               <Film className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-lg">CineGear</span>
+            <span className="font-display font-bold text-lg">RentFlow</span>
           </div>
 
           <div className="glass-card premium-shadow-lg p-8">
@@ -174,7 +174,7 @@ const SignupPage: React.FC = () => {
               </div>
               <div>
                 <h1 className="font-display text-2xl font-bold tracking-tight">Criar conta</h1>
-                <p className="text-xs text-muted-foreground">Cadastre sua locadora no CineGear</p>
+                <p className="text-xs text-muted-foreground">Cadastre sua locadora no RentFlow</p>
               </div>
             </div>
 

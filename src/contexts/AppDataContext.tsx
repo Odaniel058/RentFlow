@@ -21,8 +21,9 @@ import {
 } from "@/data/mock-data";
 import { useAuth } from "@/contexts/AuthContext";
 
-const STORAGE_KEY = "cinegear_tenant_store_v2";
+const STORAGE_KEY = "rentflow_tenant_store_v2";
 const LEGACY_STORAGE_KEY = "cinegear_app_data";
+const LEGACY_TENANT_STORE_KEY = "cinegear_tenant_store_v2";
 
 const emptyClientAddress = (): ClientAddress => ({
   zipCode: "",
@@ -132,6 +133,16 @@ const readStore = (): TenantStore => {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
     const parsed = JSON.parse(stored) as TenantStore;
+    return Object.fromEntries(
+      Object.entries(parsed).map(([tenantId, tenantState]) => [tenantId, normalizeTenantState(tenantState)]),
+    );
+  }
+
+  const legacyTenantStore = localStorage.getItem(LEGACY_TENANT_STORE_KEY);
+  if (legacyTenantStore) {
+    localStorage.setItem(STORAGE_KEY, legacyTenantStore);
+    localStorage.removeItem(LEGACY_TENANT_STORE_KEY);
+    const parsed = JSON.parse(legacyTenantStore) as TenantStore;
     return Object.fromEntries(
       Object.entries(parsed).map(([tenantId, tenantState]) => [tenantId, normalizeTenantState(tenantState)]),
     );

@@ -106,7 +106,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   className="font-bold text-base tracking-tight whitespace-nowrap font-display"
                   style={{ color: 'hsl(var(--sidebar-foreground))' }}
                 >
-                  CineGear
+                  RentFlow
                 </p>
                 <p className="text-[10px] text-muted-foreground truncate font-medium tracking-wide uppercase opacity-60">
                   {user?.company}

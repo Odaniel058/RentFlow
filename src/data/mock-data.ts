@@ -150,11 +150,11 @@ export interface AppDataState {
 }
 
 export const defaultCompanySettings: CompanySettings = {
-  companyName: "CineGear Rentals",
+  companyName: "RentFlow Rentals",
   logoUrl: "",
   cnpj: "12.345.678/0001-90",
   phone: "(11) 4000-2026",
-  email: "contato@cinegear.com.br",
+  email: "contato@rentflow.app",
   address: "Rua das Câmeras, 123 - Vila Madalena, São Paulo - SP",
   contactName: "Gabriel Costa",
   themePreference: "dark",

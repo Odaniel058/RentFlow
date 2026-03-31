@@ -29,7 +29,7 @@ const ReportsPage: React.FC = () => {
 
   const exportCsv = () => {
     downloadCsv(
-      "relatorio-cinegear.csv",
+      "relatorio-rentflow.csv",
       ["Reserva", "Cliente", "Status", "Valor", "Retirada", "Devolução"],
       reservations.map((reservation) => [reservation.id, reservation.clientName, reservation.status, reservation.totalValue, reservation.pickupDate, reservation.returnDate]),
     );

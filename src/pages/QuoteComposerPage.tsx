@@ -90,7 +90,7 @@ const QuoteComposerPage: React.FC = () => {
   const { user } = useAuth();
   const { state, upsertQuote, convertQuoteToReservation } = useAppData();
   const editingQuote = state.quotes.find((quote) => quote.id === quoteId);
-  const draftStorageKey = `cinegear_quote_wizard_${user?.tenantId ?? "guest"}_${quoteId ?? "new"}`;
+  const draftStorageKey = `rentflow_quote_wizard_${user?.tenantId ?? "guest"}_${quoteId ?? "new"}`;
 
   const [activeStep, setActiveStep] = useState(0);
   const [form, setForm] = useState<QuoteWizardForm>(createEmptyForm());

@@ -89,7 +89,7 @@ const testimonials = [
   {
     name: "Rodrigo Faria",
     role: "LuzAction Rentals",
-    text: "O CineGear ajudou a organizar agenda, inventario e operacao sem complicar o fluxo da equipe.",
+    text: "O RentFlow ajudou a organizar agenda, inventario e operacao sem complicar o fluxo da equipe.",
   },
   {
     name: "Camila Dutra",
@@ -195,7 +195,7 @@ const LandingPage: React.FC = () => {
               <div className="brand-badge">
                 <Film className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-display font-bold text-base tracking-tight">CineGear</span>
+              <span className="font-display font-bold text-base tracking-tight">RentFlow</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-8">
@@ -539,7 +539,7 @@ const LandingPage: React.FC = () => {
                 Comece agora gratuitamente
               </h2>
               <p className="mt-5 text-lg text-white/70 max-w-xl mx-auto">
-                Crie sua conta e teste o CineGear. Sem compromisso, sem cartao de credito.
+                Crie sua conta e teste o RentFlow. Sem compromisso, sem cartao de credito.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link to="/signup">
@@ -565,9 +565,9 @@ const LandingPage: React.FC = () => {
             <div className="w-7 h-7 rounded-lg gradient-gold flex items-center justify-center">
               <Film className="h-3.5 w-3.5 text-primary-foreground" />
             </div>
-            <span className="text-sm font-semibold">CineGear</span>
+            <span className="text-sm font-semibold">RentFlow</span>
           </div>
-          <p className="text-xs text-muted-foreground">(c) 2026 CineGear. Todos os direitos reservados.</p>
+          <p className="text-xs text-muted-foreground">(c) 2026 RentFlow. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

@@ -56,7 +56,7 @@ const FinancialPage: React.FC = () => {
 
   const exportFinanceCsv = () => {
     downloadCsv(
-      "financeiro-cinegear.csv",
+      "financeiro-rentflow.csv",
       ["Reserva", "Cliente", "Status", "Valor", "Retirada", "Devolução"],
       pendingReservations.map((reservation) => [
         reservation.id,

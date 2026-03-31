@@ -97,7 +97,7 @@ const buildQuoteDocument = ({ quote, settings, client, equipment = [], kits = []
   const subtotal = enrichedItems.reduce((sum, item) => sum + item.subtotal, 0);
   const total = Number.isFinite(quote.total) ? quote.total : Math.max(0, subtotal - quote.discount);
   const company = {
-    name: safeText(settings.companyName, "CineGear"),
+    name: safeText(settings.companyName, "RentFlow"),
     cnpj: safeText(settings.cnpj, "CNPJ não informado"),
     phone: safeText(settings.phone, "Telefone não informado"),
     email: safeText(settings.email, "Email não informado"),
@@ -448,7 +448,7 @@ const buildQuoteHtml = (context: QuoteExportContext) => {
           </div>
 
           <div class="footer">
-            Este orçamento foi gerado pelo CineGear. Valores sujeitos à disponibilidade de itens na retirada.
+            Este orçamento foi gerado pelo RentFlow. Valores sujeitos à disponibilidade de itens na retirada.
             Em caso de dúvidas, responda para ${escapeHtml(documentData.company.email)} ou ligue para ${escapeHtml(documentData.company.phone)}.
           </div>
         </div>
@@ -619,7 +619,7 @@ export const downloadQuotePdf = async (context: QuoteExportContext) => {
       doc.setFontSize(9);
       doc.setTextColor(140, 145, 158);
       doc.text(
-        `Gerado por CineGear • Página ${data.pageNumber}`,
+        `Gerado por RentFlow • Página ${data.pageNumber}`,
         pageWidth - margin,
         pageHeight - 22,
         { align: "right" },

@@ -25,9 +25,9 @@ const FLOATING = [
 const LoginPage: React.FC = () => {
   const { isAuthenticated, login, requestPasswordReset } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail]               = useState("admin@cinegear.com.br");
-  const [password, setPassword]         = useState("cinegear123");
-  const [resetEmail, setResetEmail]     = useState("admin@cinegear.com.br");
+  const [email, setEmail]               = useState("admin@rentflow.app");
+  const [password, setPassword]         = useState("rentflow123");
+  const [resetEmail, setResetEmail]     = useState("admin@rentflow.app");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]           = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
@@ -101,7 +101,7 @@ const LoginPage: React.FC = () => {
             >
               <Film className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
             </motion.div>
-            <span className="font-display font-bold text-lg">CineGear</span>
+            <span className="font-display font-bold text-lg">RentFlow</span>
           </Link>
 
           <div className="space-y-8 max-w-sm">
@@ -130,13 +130,13 @@ const LoginPage: React.FC = () => {
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Conta demo</p>
               </div>
               <div className="space-y-1 font-mono text-sm text-foreground/80">
-                <p>admin@cinegear.com.br</p>
-                <p>cinegear123</p>
+                <p>admin@rentflow.app</p>
+                <p>rentflow123</p>
               </div>
             </motion.div>
           </div>
 
-          <p className="text-xs text-muted-foreground/50">© {new Date().getFullYear()} CineGear</p>
+          <p className="text-xs text-muted-foreground/50">© {new Date().getFullYear()} RentFlow</p>
         </div>
       </div>
 
@@ -154,7 +154,7 @@ const LoginPage: React.FC = () => {
             <div className="w-9 h-9 rounded-xl gradient-gold flex items-center justify-center">
               <Film className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-lg">CineGear</span>
+            <span className="font-display font-bold text-lg">RentFlow</span>
           </div>
 
           <div className="glass-card premium-shadow-lg p-8">

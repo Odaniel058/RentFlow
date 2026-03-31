@@ -38,13 +38,16 @@ interface AuthContextType {
   getTenantWorkspace: (tenantId: string) => TenantWorkspace | undefined;
 }
 
-const SESSION_KEY = "cinegear_session_v2";
-const USERS_KEY = "cinegear_registered_users_v2";
-const TENANTS_KEY = "cinegear_tenants_v2";
+const SESSION_KEY = "rentflow_session_v2";
+const USERS_KEY = "rentflow_registered_users_v2";
+const TENANTS_KEY = "rentflow_tenants_v2";
+const LEGACY_SESSION_KEY = "cinegear_session_v2";
+const LEGACY_USERS_KEY = "cinegear_registered_users_v2";
+const LEGACY_TENANTS_KEY = "cinegear_tenants_v2";
 
 const defaultTenant: TenantWorkspace = {
   id: "TENANT-DEMO",
-  company: "CineGear Rentals",
+  company: "RentFlow Rentals",
   seedMode: "demo",
   createdAt: "2026-03-16T09:00:00.000Z",
 };
@@ -52,8 +55,8 @@ const defaultTenant: TenantWorkspace = {
 const defaultUsers: RegisteredUser[] = [
   {
     id: "USR-001",
-    email: "admin@cinegear.com.br",
-    password: "cinegear123",
+    email: "admin@rentflow.app",
+    password: "rentflow123",
     name: "Administrador",
     company: defaultTenant.company,
     tenantId: defaultTenant.id,
@@ -70,22 +73,36 @@ export const useAuth = () => {
 
 const getStoredTenants = () => {
   const stored = localStorage.getItem(TENANTS_KEY);
-  if (!stored) {
-    localStorage.setItem(TENANTS_KEY, JSON.stringify([defaultTenant]));
-    return [defaultTenant];
+  if (stored) {
+    return JSON.parse(stored) as TenantWorkspace[];
   }
 
-  return JSON.parse(stored) as TenantWorkspace[];
+  const legacy = localStorage.getItem(LEGACY_TENANTS_KEY);
+  if (legacy) {
+    localStorage.setItem(TENANTS_KEY, legacy);
+    localStorage.removeItem(LEGACY_TENANTS_KEY);
+    return JSON.parse(legacy) as TenantWorkspace[];
+  }
+
+  localStorage.setItem(TENANTS_KEY, JSON.stringify([defaultTenant]));
+  return [defaultTenant];
 };
 
 const getStoredUsers = () => {
   const stored = localStorage.getItem(USERS_KEY);
-  if (!stored) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(defaultUsers));
-    return defaultUsers;
+  if (stored) {
+    return JSON.parse(stored) as RegisteredUser[];
   }
 
-  return JSON.parse(stored) as RegisteredUser[];
+  const legacy = localStorage.getItem(LEGACY_USERS_KEY);
+  if (legacy) {
+    localStorage.setItem(USERS_KEY, legacy);
+    localStorage.removeItem(LEGACY_USERS_KEY);
+    return JSON.parse(legacy) as RegisteredUser[];
+  }
+
+  localStorage.setItem(USERS_KEY, JSON.stringify(defaultUsers));
+  return defaultUsers;
 };
 
 const sanitizeUser = (user: RegisteredUser): User => ({
@@ -107,7 +124,11 @@ const slugify = (value: string) =>
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem(SESSION_KEY);
+    const stored = localStorage.getItem(SESSION_KEY) ?? localStorage.getItem(LEGACY_SESSION_KEY);
+    if (stored && !localStorage.getItem(SESSION_KEY)) {
+      localStorage.setItem(SESSION_KEY, stored);
+      localStorage.removeItem(LEGACY_SESSION_KEY);
+    }
     return stored ? (JSON.parse(stored) as User) : null;
   });
 
