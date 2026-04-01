@@ -124,8 +124,21 @@ const normalizeClientRecord = (client: Partial<Client> & { id: string }): Client
   };
 };
 
+const normalizeEquipmentRecord = (equipment: Equipment): Equipment => ({
+  ...equipment,
+  status:
+    equipment.status === "reserved"
+      ? "reserved"
+      : equipment.status === "maintenance"
+        ? "maintenance"
+        : equipment.status === "available"
+          ? "available"
+          : "maintenance",
+});
+
 const normalizeTenantState = (tenantState: AppDataState): AppDataState => ({
   ...tenantState,
+  equipment: tenantState.equipment.map((equipment) => normalizeEquipmentRecord(equipment)),
   clients: tenantState.clients.map((client) => normalizeClientRecord(client)),
 });
 

@@ -30,7 +30,7 @@ const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", aliases: [] },
   { label: "Invent\u00e1rio", icon: Package, path: "/inventory", aliases: [] },
   { label: "Reservas", icon: CalendarDays, path: "/reservations", aliases: [] },
-  { label: "Or\u00e7amentos", icon: FileText, path: "/quotes", aliases: [] },
+  { label: "Propostas", icon: FileText, path: "/quotes", aliases: [] },
   { label: "Agenda", icon: CalendarDays, path: "/calendar", aliases: ["/agenda"] },
   { label: "Clientes", icon: Users, path: "/clients", aliases: [] },
   { label: "Kits", icon: Boxes, path: "/kits", aliases: [] },

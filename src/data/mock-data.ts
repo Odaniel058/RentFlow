@@ -1,4 +1,4 @@
-export type EquipmentStatus = "available" | "reserved" | "maintenance" | "unavailable";
+export type EquipmentStatus = "available" | "reserved" | "maintenance";
 export type ReservationStatus = "quote" | "approved" | "in_progress" | "completed" | "cancelled";
 export type QuoteStatus = "draft" | "sent" | "approved" | "rejected" | "converted";
 export type ContractStatus = "draft" | "signed" | "active" | "completed";
@@ -175,7 +175,7 @@ export const equipmentSeed: Equipment[] = [
   { id: "EQ-012", name: "SmallHD Cine 7", category: "Monitores", brand: "SmallHD", model: "Cine 7", serialNumber: "SN-SH7-001", status: "available", dailyRate: 180, location: "Estúdio A", notes: "Monitor 7 polegadas com suporte.", supplier: "Monitor Lab", acquisitionDate: "2025-01-07", acquisitionCost: 11800 },
   { id: "EQ-013", name: "Blackmagic ATEM Mini Pro", category: "Acessórios", brand: "Blackmagic", model: "ATEM Mini Pro", serialNumber: "SN-BM-001", status: "available", dailyRate: 150, location: "Estúdio B", notes: "Switcher para live streaming.", supplier: "Blackmagic Brasil", acquisitionDate: "2024-10-18", acquisitionCost: 4100 },
   { id: "EQ-014", name: "Sigma 18-35mm f/1.8 Art", category: "Lentes", brand: "Sigma", model: "18-35mm f/1.8 Art", serialNumber: "SN-SIG-001", status: "available", dailyRate: 150, location: "Estúdio A", notes: "Zoom rápido para setups compactos.", supplier: "Sigma Dealer", acquisitionDate: "2025-01-05", acquisitionCost: 5800 },
-  { id: "EQ-015", name: "Godox AD600 Pro", category: "Iluminação", brand: "Godox", model: "AD600 Pro", serialNumber: "SN-GD6-001", status: "unavailable", dailyRate: 180, location: "Externo", notes: "Indisponível por reposição de bateria.", supplier: "Light House", acquisitionDate: "2024-07-11", acquisitionCost: 6200 },
+  { id: "EQ-015", name: "Godox AD600 Pro", category: "Iluminação", brand: "Godox", model: "AD600 Pro", serialNumber: "SN-GD6-001", status: "maintenance", dailyRate: 180, location: "Externo", notes: "Em manutenção por reposição de bateria.", supplier: "Light House", acquisitionDate: "2024-07-11", acquisitionCost: 6200 },
 ];
 
 export const clientsSeed: Client[] = [

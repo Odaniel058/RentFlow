@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -20,6 +20,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { Equipment, EquipmentStatus } from "@/data/mock-data";
 import { formatCurrency } from "@/lib/format";
+import { getInventoryCategoryOptions, getOperationalEquipmentStatus, INVENTORY_STATUS_OPTIONS } from "@/lib/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,13 +37,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-
-const statusOptions: Array<{ value: EquipmentStatus; label: string }> = [
-  { value: "available", label: "Disponível" },
-  { value: "reserved", label: "Reservado" },
-  { value: "maintenance", label: "Manutenção" },
-  { value: "unavailable", label: "Indisponível" },
-];
 
 const emptyForm: Omit<Equipment, "id"> = {
   name: "",
@@ -71,11 +65,22 @@ const InventoryPage: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<Equipment | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Omit<Equipment, "id">>(emptyForm);
+  const detailsRef = useRef<HTMLDivElement | null>(null);
 
-  const categories = useMemo(() => ["Todas", ...new Set(state.equipment.map((item) => item.category))], [state.equipment]);
+  const categoryOptions = useMemo(() => getInventoryCategoryOptions(state.equipment), [state.equipment]);
+  const categories = useMemo(() => ["Todas", ...categoryOptions], [categoryOptions]);
   const brands = useMemo(() => ["Todas", ...new Set(state.equipment.map((item) => item.brand))], [state.equipment]);
 
-  const filtered = state.equipment.filter((item) => {
+  const equipmentWithStatus = useMemo(
+    () =>
+      state.equipment.map((item) => ({
+        ...item,
+        operationalStatus: getOperationalEquipmentStatus(item, state.reservations),
+      })),
+    [state.equipment, state.reservations],
+  );
+
+  const filtered = equipmentWithStatus.filter((item) => {
     const searchValue = search.toLowerCase();
     const matchesSearch =
       !searchValue ||
@@ -86,20 +91,24 @@ const InventoryPage: React.FC = () => {
     if (!matchesSearch) return false;
     if (category !== "Todas" && item.category !== category) return false;
     if (brand !== "Todas" && item.brand !== brand) return false;
-    if (status !== "Todos" && item.status !== status) return false;
+    if (status !== "Todos" && item.operationalStatus !== status) return false;
     return true;
   });
 
-  const selected = state.equipment.find((item) => item.id === selectedId) ?? filtered[0] ?? null;
+  const selected =
+    filtered.find((item) => item.id === selectedId) ??
+    equipmentWithStatus.find((item) => item.id === selectedId) ??
+    filtered[0] ??
+    null;
 
   const inventoryStats = useMemo(() => {
-    const available = state.equipment.filter((item) => item.status === "available").length;
-    const maintenance = state.equipment.filter((item) => item.status === "maintenance").length;
-    const reserved = state.equipment.filter((item) => item.status === "reserved").length;
-    const monthlyPotential = state.equipment.reduce((sum, item) => sum + item.dailyRate * 22, 0);
+    const available = equipmentWithStatus.filter((item) => item.operationalStatus === "available").length;
+    const maintenance = equipmentWithStatus.filter((item) => item.operationalStatus === "maintenance").length;
+    const reserved = equipmentWithStatus.filter((item) => item.operationalStatus === "reserved").length;
+    const monthlyPotential = equipmentWithStatus.reduce((sum, item) => sum + item.dailyRate * 22, 0);
 
     return { available, maintenance, reserved, monthlyPotential };
-  }, [state.equipment]);
+  }, [equipmentWithStatus]);
 
   const topCategories = useMemo(() => {
     const groups = new Map<string, number>();
@@ -110,7 +119,7 @@ const InventoryPage: React.FC = () => {
   }, [state.equipment]);
 
   const openCreate = () => {
-    setForm(emptyForm);
+    setForm({ ...emptyForm, category: categoryOptions[0] ?? "" });
     setEditingId(null);
     setEditorOpen(true);
   };
@@ -135,9 +144,14 @@ const InventoryPage: React.FC = () => {
     setEditorOpen(true);
   };
 
+  const handleSelectEquipment = (itemId: string) => {
+    setSelectedId(itemId);
+    detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const handleSave = async () => {
     if (!form.name || !form.category || !form.brand || !form.model || !form.serialNumber || !form.location || form.dailyRate <= 0) {
-      toast.error("Preencha todos os campos obrigatórios do equipamento.");
+      toast.error("Preencha todos os campos obrigatorios do equipamento.");
       return;
     }
 
@@ -157,7 +171,7 @@ const InventoryPage: React.FC = () => {
     if (selectedId === deleteTarget.id) {
       setSelectedId(null);
     }
-    toast.success("Equipamento excluído.");
+    toast.success("Equipamento excluido.");
     setDeleteTarget(null);
   };
 
@@ -178,10 +192,10 @@ const InventoryPage: React.FC = () => {
                   Inventory Control
                 </div>
                 <h1 className="font-display text-3xl font-bold tracking-tight text-white md:text-4xl">
-                  Inventário com leitura rápida, contexto operacional e margem de receita.
+                  Inventario com leitura rapida, contexto operacional e margem de receita.
                 </h1>
                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/70">
-                  Veja disponibilidade, tensões de manutenção e potencial de faturamento sem perder tempo em uma tabela fria.
+                  Veja disponibilidade, tensoes de manutencao e potencial de faturamento sem perder tempo em uma tabela fria.
                 </p>
               </div>
 
@@ -192,85 +206,102 @@ const InventoryPage: React.FC = () => {
                     Novo equipamento
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl glass-card premium-shadow-lg">
+                <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden glass-card premium-shadow-lg">
                   <DialogHeader>
                     <DialogTitle>{editingId ? "Editar equipamento" : "Novo equipamento"}</DialogTitle>
-                    <p className="text-sm text-muted-foreground">Formulário ampliado para operação, controle interno e contexto financeiro do ativo.</p>
+                    <p className="text-sm text-muted-foreground">Formulario ampliado para operacao, controle interno e contexto financeiro do ativo.</p>
                   </DialogHeader>
-                  <div className="rounded-2xl border border-border/60 bg-surface/30 p-4">
-                    <p className="mb-4 text-xs uppercase tracking-[0.22em] text-muted-foreground">Dados principais</p>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Nome</Label>
-                        <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Categoria</Label>
-                        <Input value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Marca</Label>
-                        <Input value={form.brand} onChange={(event) => setForm((current) => ({ ...current, brand: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Modelo</Label>
-                        <Input value={form.model} onChange={(event) => setForm((current) => ({ ...current, model: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Número de série</Label>
-                        <Input value={form.serialNumber} onChange={(event) => setForm((current) => ({ ...current, serialNumber: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Status</Label>
-                        <select
-                          value={form.status}
-                          onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as EquipmentStatus }))}
-                          className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                        >
-                          {statusOptions.map((item) => (
-                            <option key={item.value} value={item.value}>
-                              {item.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Preço da diária</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={form.dailyRate}
-                          onChange={(event) => setForm((current) => ({ ...current, dailyRate: Number(event.target.value) }))}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Localização</Label>
-                        <Input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-border/60 bg-surface/30 p-4">
-                    <p className="mb-4 text-xs uppercase tracking-[0.22em] text-muted-foreground">Aquisição e fornecedor</p>
-                    <div className="grid sm:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Fornecedor</Label>
-                        <Input value={form.supplier || ""} onChange={(event) => setForm((current) => ({ ...current, supplier: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Data de aquisição</Label>
-                        <Input type="date" value={form.acquisitionDate || ""} onChange={(event) => setForm((current) => ({ ...current, acquisitionDate: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Custo</Label>
-                        <Input type="number" min={0} value={form.acquisitionCost || 0} onChange={(event) => setForm((current) => ({ ...current, acquisitionCost: Number(event.target.value) }))} />
+
+                  <div className="max-h-[calc(90vh-10rem)] space-y-4 overflow-y-auto pr-2">
+                    <div className="rounded-2xl border border-border/60 bg-surface/30 p-4">
+                      <p className="mb-4 text-xs uppercase tracking-[0.22em] text-muted-foreground">Dados principais</p>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Nome</Label>
+                          <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Categoria</Label>
+                          <select
+                            value={form.category}
+                            onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
+                            className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                          >
+                            <option value="">Selecione uma categoria</option>
+                            {categoryOptions.map((item) => (
+                              <option key={item} value={item}>
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Marca</Label>
+                          <Input value={form.brand} onChange={(event) => setForm((current) => ({ ...current, brand: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Modelo</Label>
+                          <Input value={form.model} onChange={(event) => setForm((current) => ({ ...current, model: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Numero de serie</Label>
+                          <Input value={form.serialNumber} onChange={(event) => setForm((current) => ({ ...current, serialNumber: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Status</Label>
+                          <select
+                            value={form.status}
+                            onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as EquipmentStatus }))}
+                            className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                          >
+                            {INVENTORY_STATUS_OPTIONS.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Preco da diaria</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={form.dailyRate}
+                            onChange={(event) => setForm((current) => ({ ...current, dailyRate: Number(event.target.value) }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Localizacao</Label>
+                          <Input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} />
+                        </div>
                       </div>
                     </div>
+
+                    <div className="rounded-2xl border border-border/60 bg-surface/30 p-4">
+                      <p className="mb-4 text-xs uppercase tracking-[0.22em] text-muted-foreground">Aquisicao e fornecedor</p>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label>Fornecedor</Label>
+                          <Input value={form.supplier || ""} onChange={(event) => setForm((current) => ({ ...current, supplier: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Data de aquisicao</Label>
+                          <Input type="date" value={form.acquisitionDate || ""} onChange={(event) => setForm((current) => ({ ...current, acquisitionDate: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Custo</Label>
+                          <Input type="number" min={0} value={form.acquisitionCost || 0} onChange={(event) => setForm((current) => ({ ...current, acquisitionCost: Number(event.target.value) }))} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 rounded-2xl border border-border/60 bg-surface/30 p-4">
+                      <Label>Notas internas</Label>
+                      <Textarea rows={4} value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} />
+                    </div>
                   </div>
-                  <div className="space-y-2 rounded-2xl border border-border/60 bg-surface/30 p-4">
-                    <Label>Notas internas</Label>
-                    <Textarea rows={4} value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} />
-                  </div>
-                  <div className="flex justify-end gap-3">
+
+                  <div className="flex justify-end gap-3 border-t border-border/50 pt-4">
                     <Button variant="outline" onClick={() => setEditorOpen(false)}>
                       Cancelar
                     </Button>
@@ -285,27 +316,27 @@ const InventoryPage: React.FC = () => {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {[
                 {
-                  label: "Disponíveis agora",
+                  label: "Disponiveis agora",
                   value: inventoryStats.available,
                   helper: "prontos para reserva",
                   icon: Camera,
                 },
                 {
-                  label: "Em manutenção",
+                  label: "Em manutencao",
                   value: inventoryStats.maintenance,
-                  helper: "pedem atenção da operação",
+                  helper: "pedem atencao da operacao",
                   icon: Wrench,
                 },
                 {
-                  label: "Em reserva",
+                  label: "Reservados",
                   value: inventoryStats.reserved,
-                  helper: "já alocados em jobs",
+                  helper: "alocados por periodo ou projeto",
                   icon: Boxes,
                 },
                 {
                   label: "Potencial mensal",
                   value: formatCurrency(inventoryStats.monthlyPotential),
-                  helper: "22 diárias por item",
+                  helper: "22 diarias por item",
                   icon: Wallet,
                 },
               ].map((item, index) => (
@@ -337,7 +368,7 @@ const InventoryPage: React.FC = () => {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nome, modelo ou série..."
+                    placeholder="Buscar por nome, modelo ou serie..."
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     className="pl-9"
@@ -358,9 +389,9 @@ const InventoryPage: React.FC = () => {
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                {["Todos", ...statusOptions.map((item) => item.value)].map((item) => {
+                {["Todos", ...INVENTORY_STATUS_OPTIONS.map((item) => item.value)].map((item) => {
                   const active = status === item;
-                  const label = item === "Todos" ? "Todos" : statusOptions.find((option) => option.value === item)?.label ?? item;
+                  const label = item === "Todos" ? "Todos" : INVENTORY_STATUS_OPTIONS.find((option) => option.value === item)?.label ?? item;
                   return (
                     <button
                       key={item}
@@ -384,7 +415,7 @@ const InventoryPage: React.FC = () => {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold">Acervo operacional</p>
-                    <p className="text-xs text-muted-foreground">{filtered.length} itens encontrados para a visão atual.</p>
+                    <p className="text-xs text-muted-foreground">{filtered.length} itens encontrados para a visao atual.</p>
                   </div>
                   <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
                     {topCategories.map(([name, count]) => (
@@ -404,8 +435,8 @@ const InventoryPage: React.FC = () => {
                       <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Categoria</th>
                       <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Status</th>
                       <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Local</th>
-                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Diária</th>
-                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Ações</th>
+                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Diaria</th>
+                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Acoes</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -418,7 +449,7 @@ const InventoryPage: React.FC = () => {
                         className={`cursor-pointer border-b border-border/40 transition-colors hover:bg-surface/70 ${
                           selectedId === item.id ? "bg-primary/6" : ""
                         }`}
-                        onClick={() => setSelectedId(item.id)}
+                        onClick={() => handleSelectEquipment(item.id)}
                       >
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
@@ -432,7 +463,7 @@ const InventoryPage: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-sm text-muted-foreground">{item.category}</td>
-                        <td className="px-5 py-4"><StatusBadge status={item.status} /></td>
+                        <td className="px-5 py-4"><StatusBadge status={item.operationalStatus} /></td>
                         <td className="px-5 py-4 text-sm text-muted-foreground">{item.location}</td>
                         <td className="px-5 py-4 text-right text-sm font-semibold">{formatCurrency(item.dailyRate)}</td>
                         <td className="px-5 py-4">
@@ -455,14 +486,14 @@ const InventoryPage: React.FC = () => {
                 <div className="p-14 text-center text-muted-foreground">
                   <Package className="mx-auto mb-3 h-10 w-10 opacity-40" />
                   <p className="text-sm font-medium">Nenhum equipamento encontrado</p>
-                  <p className="mt-1 text-xs">Ajuste os filtros ou cadastre um novo item no inventário.</p>
+                  <p className="mt-1 text-xs">Ajuste os filtros ou cadastre um novo item no inventario.</p>
                 </div>
               )}
             </div>
           </div>
 
           <div className="space-y-6">
-            <div className="glass-card p-6 premium-shadow xl:sticky xl:top-8">
+            <div ref={detailsRef} className="glass-card p-6 premium-shadow xl:sticky xl:top-8">
               {selected ? (
                 <div className="space-y-5">
                   <div className="flex items-start justify-between gap-4">
@@ -471,17 +502,17 @@ const InventoryPage: React.FC = () => {
                       <h3 className="text-2xl font-semibold">{selected.name}</h3>
                       <p className="text-sm text-muted-foreground">{selected.brand} • {selected.model}</p>
                     </div>
-                    <StatusBadge status={selected.status} />
+                    <StatusBadge status={selected.operationalStatus} />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-2xl border border-border/60 bg-surface/40 p-4">
-                      <p className="text-xs text-muted-foreground">Diária</p>
+                      <p className="text-xs text-muted-foreground">Diaria</p>
                       <p className="mt-1 font-display text-2xl font-bold gradient-gold-text">{formatCurrency(selected.dailyRate)}</p>
                     </div>
                     <div className="rounded-2xl border border-border/60 bg-surface/40 p-4">
-                      <p className="text-xs text-muted-foreground">Aquisição</p>
-                      <p className="mt-1 text-sm font-medium">{selected.acquisitionDate || "Não informada"}</p>
+                      <p className="text-xs text-muted-foreground">Aquisicao</p>
+                      <p className="mt-1 text-sm font-medium">{selected.acquisitionDate || "Nao informada"}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {selected.acquisitionCost ? formatCurrency(selected.acquisitionCost) : "Sem custo cadastrado"}
                       </p>
@@ -508,15 +539,15 @@ const InventoryPage: React.FC = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">Fornecedor</span>
-                        <span className="font-medium">{selected.supplier || "Não informado"}</span>
+                        <span className="font-medium">{selected.supplier || "Nao informado"}</span>
                       </div>
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">Categoria</span>
                         <span className="font-medium">{selected.category}</span>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">Status atual</span>
-                        <span className="font-medium">{statusOptions.find((item) => item.value === selected.status)?.label}</span>
+                        <span className="text-muted-foreground">Status operacional</span>
+                        <span className="font-medium">{INVENTORY_STATUS_OPTIONS.find((item) => item.value === selected.operationalStatus)?.label}</span>
                       </div>
                     </div>
                   </div>
@@ -547,7 +578,7 @@ const InventoryPage: React.FC = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Excluir equipamento</AlertDialogTitle>
               <AlertDialogDescription>
-                Essa ação remove {deleteTarget?.name} do inventário mockado e atualiza o restante do app.
+                Essa acao remove {deleteTarget?.name} do inventario mockado e atualiza o restante do app.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

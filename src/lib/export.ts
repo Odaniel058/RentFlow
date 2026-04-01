@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Client, CompanySettings, Contract, Equipment, Kit, Quote, Reservation } from "@/data/mock-data";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { getQuoteItemKitItems } from "@/lib/quotes";
 
 interface QuoteExportContext {
   quote: Quote;
@@ -91,6 +92,7 @@ const buildQuoteDocument = ({ quote, settings, client, equipment = [], kits = []
   const enrichedItems = quote.items.map((item) => ({
     ...item,
     category: resolveItemCategory(item.refId, item.type, equipment, kits),
+    kitItems: getQuoteItemKitItems(item, kits),
     subtotal: item.quantity * item.dailyRate * item.days,
   }));
 
@@ -430,6 +432,15 @@ const buildQuoteHtml = (context: QuoteExportContext) => {
                       <td class="right">${escapeHtml(money(item.dailyRate))}</td>
                       <td class="right">${escapeHtml(money(item.subtotal))}</td>
                     </tr>
+                    ${item.kitItems.length ? `
+                      <tr>
+                        <td colspan="6" style="padding-top:0">
+                          <div style="padding:10px 12px;border:1px dashed var(--line);border-radius:14px;background:#fffaf0;color:var(--muted);font-size:12px">
+                            <strong style="color:var(--ink)">Composicao do kit:</strong> ${item.kitItems.map((kitItem) => `${escapeHtml(kitItem)} (${item.quantity}x)`).join(" • ")}
+                          </div>
+                        </td>
+                      </tr>
+                    ` : ""}
                   `,
                 )
                 .join("")}
@@ -581,7 +592,7 @@ export const downloadQuotePdf = async (context: QuoteExportContext) => {
     margin: { left: margin, right: margin },
     head: [["Item", "Categoria", "Qtd", "Diárias", "Valor unitário", "Subtotal"]],
     body: documentData.items.map((item) => [
-      item.name,
+      item.kitItems.length ? `${item.name}\nComposicao: ${item.kitItems.map((kitItem) => `${kitItem} (${item.quantity}x)`).join(" • ")}` : item.name,
       item.category,
       String(item.quantity),
       String(item.days),
