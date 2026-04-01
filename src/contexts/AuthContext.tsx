@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { TenantSeedMode } from "@/data/mock-data";
+import { CompanySettings, createInitialTenantData, TenantSeedMode } from "@/data/mock-data";
 
 interface User {
   id: string;
@@ -25,7 +25,8 @@ interface SignupPayload {
   company: string;
   email: string;
   password: string;
-  seedMode: TenantSeedMode;
+  seedMode?: TenantSeedMode;
+  settings?: Partial<CompanySettings>;
 }
 
 interface AuthContextType {
@@ -44,6 +45,8 @@ const TENANTS_KEY = "rentflow_tenants_v2";
 const LEGACY_SESSION_KEY = "cinegear_session_v2";
 const LEGACY_USERS_KEY = "cinegear_registered_users_v2";
 const LEGACY_TENANTS_KEY = "cinegear_tenants_v2";
+const TENANT_STORE_KEY = "rentflow_tenant_store_v2";
+const LEGACY_TENANT_STORE_KEY = "cinegear_tenant_store_v2";
 
 const defaultTenant: TenantWorkspace = {
   id: "TENANT-DEMO",
@@ -149,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem(SESSION_KEY, JSON.stringify(nextUser));
         setUser(nextUser);
       },
-      signup: async ({ name, company, email, password, seedMode }) => {
+      signup: async ({ name, company, email, password, seedMode = "empty", settings }) => {
         await new Promise((resolve) => setTimeout(resolve, 900));
 
         if (password.length < 8) {
@@ -183,6 +186,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const updatedUsers = [...users, nextRegisteredUser];
         localStorage.setItem(USERS_KEY, JSON.stringify(updatedUsers));
+
+        const nextTenantStoreRaw =
+          localStorage.getItem(TENANT_STORE_KEY) ??
+          localStorage.getItem(LEGACY_TENANT_STORE_KEY) ??
+          "{}";
+        const nextTenantStore = JSON.parse(nextTenantStoreRaw) as Record<string, ReturnType<typeof createInitialTenantData>>;
+        const nextTenantData = createInitialTenantData(seedMode, company);
+        nextTenantData.settings = {
+          ...nextTenantData.settings,
+          companyName: company,
+          contactName: name,
+          ...settings,
+          equipmentCategories:
+            settings?.equipmentCategories?.filter(Boolean) ??
+            nextTenantData.settings.equipmentCategories,
+        };
+        localStorage.setItem(
+          TENANT_STORE_KEY,
+          JSON.stringify({
+            ...nextTenantStore,
+            [tenantId]: nextTenantData,
+          }),
+        );
+        localStorage.removeItem(LEGACY_TENANT_STORE_KEY);
 
         const nextUser = sanitizeUser(nextRegisteredUser);
         localStorage.setItem(SESSION_KEY, JSON.stringify(nextUser));
