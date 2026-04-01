@@ -85,7 +85,10 @@ const QuoteComposerPage: React.FC = () => {
       setForm({ clientId: editingQuote.clientId, items: editingQuote.items.map((item) => ({ ...item })), rentalStartDate: editingQuote.rentalStartDate, rentalEndDate: editingQuote.rentalEndDate, validUntil: editingQuote.validUntil, notes: editingQuote.notes, discount: editingQuote.discount, status: editingQuote.status });
       return;
     }
-    setForm((current) => ({ ...createEmptyForm(), clientId: current.clientId || state.clients[0]?.id || "" }));
+    setForm((current) => ({
+      ...createEmptyForm(),
+      clientId: state.clients.some((client) => client.id === current.clientId) ? current.clientId : "",
+    }));
   }, [draftStorageKey, editingQuote, navigate, quoteId, state.clients]);
 
   const selectedClient = state.clients.find((client) => client.id === form.clientId) ?? null;

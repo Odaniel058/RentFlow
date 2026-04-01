@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Search, Check } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Check, Search, X } from "lucide-react";
 import { Client } from "@/data/mock-data";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface ClientSearchSelectProps {
@@ -22,12 +23,6 @@ export const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
 
   const selectedClient = clients.find((client) => client.id === value) ?? null;
 
-  useEffect(() => {
-    if (selectedClient && !query) {
-      setQuery(selectedClient.name);
-    }
-  }, [query, selectedClient]);
-
   const filteredClients = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) {
@@ -45,17 +40,47 @@ export const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
     <div className="space-y-4">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={placeholder} className="pl-9" />
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={placeholder}
+          className="pl-9 pr-10"
+        />
+        {query ? (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Limpar busca"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
       </div>
 
       {selectedClient ? (
         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Cliente selecionado</p>
-          <p className="mt-2 text-sm font-semibold">{selectedClient.name}</p>
-          <p className="text-xs text-muted-foreground">{selectedClient.company}</p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {selectedClient.email} • {selectedClient.phone}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Cliente selecionado</p>
+              <p className="mt-2 text-sm font-semibold">{selectedClient.name}</p>
+              <p className="text-xs text-muted-foreground">{selectedClient.company}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {selectedClient.email} - {selectedClient.phone}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onChange("");
+                setQuery("");
+              }}
+            >
+              Limpar
+            </Button>
+          </div>
         </div>
       ) : null}
 
@@ -69,7 +94,7 @@ export const ClientSearchSelect: React.FC<ClientSearchSelectProps> = ({
                 type="button"
                 onClick={() => {
                   onChange(client.id);
-                  setQuery(client.name);
+                  setQuery("");
                 }}
                 className={`w-full rounded-[24px] border p-4 text-left transition-all ${
                   isSelected

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { dedupeCategoryOptions } from "@/lib/inventory";
 import { toast } from "sonner";
 
 const SettingsPage: React.FC = () => {
@@ -17,6 +18,7 @@ const SettingsPage: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [form, setForm] = useState(state.settings);
   const [saving, setSaving] = useState(false);
+  const [categoryDraft, setCategoryDraft] = useState("");
 
   useEffect(() => {
     setForm(state.settings);
@@ -36,9 +38,30 @@ const SettingsPage: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 500));
-    updateSettings(form);
+    updateSettings({
+      ...form,
+      equipmentCategories: dedupeCategoryOptions(form.equipmentCategories),
+    });
     setSaving(false);
     toast.success("Configurações salvas.");
+  };
+
+  const addCategory = () => {
+    const trimmed = categoryDraft.trim();
+    if (!trimmed) return;
+
+    setForm((current) => ({
+      ...current,
+      equipmentCategories: dedupeCategoryOptions([...current.equipmentCategories, trimmed]),
+    }));
+    setCategoryDraft("");
+  };
+
+  const removeCategory = (category: string) => {
+    setForm((current) => ({
+      ...current,
+      equipmentCategories: current.equipmentCategories.filter((item) => item !== category),
+    }));
   };
 
   return (
@@ -116,6 +139,41 @@ const SettingsPage: React.FC = () => {
           </div>
 
           <div className="space-y-6">
+            <div className="glass-card p-6 premium-shadow">
+              <h2 className="font-semibold mb-4">Categorias de equipamentos</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Essas categorias aparecem no cadastro e na edicao dos equipamentos.
+              </p>
+              <div className="flex gap-3">
+                <Input
+                  value={categoryDraft}
+                  onChange={(event) => setCategoryDraft(event.target.value)}
+                  placeholder="Ex.: Drone, Energia, Transmissao"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addCategory();
+                    }
+                  }}
+                />
+                <Button variant="outline" onClick={addCategory}>
+                  Adicionar
+                </Button>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {form.equipmentCategories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => removeCategory(category)}
+                    className="rounded-full border border-border/60 bg-surface px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+                    title="Remover categoria"
+                  >
+                    {category} ×
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="glass-card p-6 premium-shadow">
               <h2 className="font-semibold mb-4">Aparência</h2>
               <div className="flex items-center justify-between gap-4">

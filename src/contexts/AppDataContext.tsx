@@ -140,6 +140,10 @@ const normalizeTenantState = (tenantState: AppDataState): AppDataState => ({
   ...tenantState,
   equipment: tenantState.equipment.map((equipment) => normalizeEquipmentRecord(equipment)),
   clients: tenantState.clients.map((client) => normalizeClientRecord(client)),
+  settings: {
+    ...tenantState.settings,
+    equipmentCategories: tenantState.settings.equipmentCategories?.filter(Boolean) ?? [],
+  },
 });
 
 const readStore = (): TenantStore => {

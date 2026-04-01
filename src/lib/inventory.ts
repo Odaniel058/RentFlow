@@ -16,10 +16,35 @@ const DEFAULT_CATEGORY_OPTIONS = [
   "Acessorios",
 ];
 
-export const getInventoryCategoryOptions = (equipment: Equipment[]) =>
-  [...new Set([...DEFAULT_CATEGORY_OPTIONS, ...equipment.map((item) => item.category).filter(Boolean)])].sort((a, b) =>
-    a.localeCompare(b, "pt-BR"),
-  );
+const normalizeCategoryKey = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+export const dedupeCategoryOptions = (categories: string[]) => {
+  const unique = new Map<string, string>();
+
+  categories
+    .map((category) => category.trim())
+    .filter(Boolean)
+    .forEach((category) => {
+      const key = normalizeCategoryKey(category);
+      if (!unique.has(key)) {
+        unique.set(key, category);
+      }
+    });
+
+  return [...unique.values()].sort((a, b) => a.localeCompare(b, "pt-BR"));
+};
+
+export const getInventoryCategoryOptions = (equipment: Equipment[], customCategories: string[] = []) =>
+  dedupeCategoryOptions([
+    ...DEFAULT_CATEGORY_OPTIONS,
+    ...customCategories,
+    ...equipment.map((item) => item.category).filter(Boolean),
+  ]);
 
 export const getOperationalEquipmentStatus = (
   equipment: Equipment,

@@ -38,7 +38,7 @@ const ReservationsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ clientId: state.clients[0]?.id ?? "", equipmentIds: [] as string[], pickupDate: "2026-03-20", returnDate: "2026-03-22", status: "quote" as ReservationStatus, notes: "" });
+  const [form, setForm] = useState({ clientId: "", equipmentIds: [] as string[], pickupDate: "2026-03-20", returnDate: "2026-03-22", status: "quote" as ReservationStatus, notes: "" });
 
   const filtered = state.reservations.filter((item) => {
     const searchValue = search.toLowerCase();

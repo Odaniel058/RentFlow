@@ -136,6 +136,7 @@ export interface CompanySettings {
   address: string;
   contactName: string;
   themePreference: ThemePreference;
+  equipmentCategories: string[];
 }
 
 export interface AppDataState {
@@ -158,6 +159,7 @@ export const defaultCompanySettings: CompanySettings = {
   address: "Rua das Câmeras, 123 - Vila Madalena, São Paulo - SP",
   contactName: "Gabriel Costa",
   themePreference: "dark",
+  equipmentCategories: ["Cameras", "Lentes", "Iluminacao", "Audio", "Grip", "Monitores", "Acessorios"],
 };
 
 export const equipmentSeed: Equipment[] = [
@@ -486,6 +488,7 @@ export const createEmptyAppData = (companyName = "Nova locadora"): AppDataState 
     cnpj: "",
     address: "",
     contactName: "",
+    equipmentCategories: [...defaultCompanySettings.equipmentCategories],
   },
 });
 

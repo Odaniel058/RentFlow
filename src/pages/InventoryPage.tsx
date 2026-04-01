@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -67,7 +68,10 @@ const InventoryPage: React.FC = () => {
   const [form, setForm] = useState<Omit<Equipment, "id">>(emptyForm);
   const detailsRef = useRef<HTMLDivElement | null>(null);
 
-  const categoryOptions = useMemo(() => getInventoryCategoryOptions(state.equipment), [state.equipment]);
+  const categoryOptions = useMemo(
+    () => getInventoryCategoryOptions(state.equipment, state.settings.equipmentCategories),
+    [state.equipment, state.settings.equipmentCategories],
+  );
   const categories = useMemo(() => ["Todas", ...categoryOptions], [categoryOptions]);
   const brands = useMemo(() => ["Todas", ...new Set(state.equipment.map((item) => item.brand))], [state.equipment]);
 
@@ -234,6 +238,13 @@ const InventoryPage: React.FC = () => {
                               </option>
                             ))}
                           </select>
+                          <p className="text-[11px] text-muted-foreground">
+                            Pode criar ou ajustar categorias em{" "}
+                            <Link to="/settings" className="underline underline-offset-2 hover:text-foreground">
+                              Configuracoes
+                            </Link>
+                            .
+                          </p>
                         </div>
                         <div className="space-y-2">
                           <Label>Marca</Label>
