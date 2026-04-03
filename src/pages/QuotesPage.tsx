@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Download, Eye, FileText, Plus, Printer, Search, RefreshCcw, ThumbsDown, CheckCircle2, Pencil, WandSparkles } from "lucide-react";
+import { Copy, Download, Eye, FileText, Link2, Plus, Printer, Search, RefreshCcw, ThumbsDown, CheckCircle2, Pencil, WandSparkles } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { StatusBadge } from "@/components/StatusBadge";
 import { QuoteKitBreakdown } from "@/components/quotes/QuoteKitBreakdown";
@@ -11,6 +11,9 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { downloadQuotePdf, previewQuoteDocument, printQuote } from "@/lib/export";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { createShareToken } from "@/lib/shareTokens";
 import { toast } from "sonner";
 
 const statuses: Array<{ value: QuoteStatus | "all"; label: string }> = [
@@ -25,9 +28,12 @@ const statuses: Array<{ value: QuoteStatus | "all"; label: string }> = [
 const QuotesPage: React.FC = () => {
   const navigate = useNavigate();
   const { state, upsertQuote, convertQuoteToReservation } = useAppData();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
   const filtered = useMemo(() => state.quotes.filter((quote) => {
     const matchesSearch = !search || quote.clientName.toLowerCase().includes(search.toLowerCase()) || quote.id.toLowerCase().includes(search.toLowerCase());
@@ -52,6 +58,18 @@ const QuotesPage: React.FC = () => {
   const handleConvert = (quote: Quote) => {
     const reservation = convertQuoteToReservation(quote.id);
     if (reservation) toast.success(`Proposta convertida na reserva ${reservation.id}.`);
+  };
+
+  const handleShare = (quote: Quote) => {
+    if (!user) return;
+    const token = createShareToken(user.tenantId, quote.id);
+    const url = `${window.location.origin}${window.location.pathname}#/proposta/${token}`;
+    setShareUrl(url);
+    setShareDialogOpen(true);
+  };
+
+  const copyShareUrl = () => {
+    navigator.clipboard.writeText(shareUrl).then(() => toast.success("Link copiado!")).catch(() => toast.error("Erro ao copiar."));
   };
 
   return (
@@ -139,6 +157,7 @@ const QuotesPage: React.FC = () => {
                   <Button variant="outline" size="sm" onClick={() => updateStatus(selected, "rejected")}><ThumbsDown className="mr-2 h-4 w-4" />Recusar</Button>
                   <Button variant="outline" size="sm" onClick={() => selectedExportContext && printQuote(selectedExportContext)}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
                   <Button variant="outline" size="sm" onClick={() => selectedExportContext && downloadQuotePdf(selectedExportContext)}><Download className="mr-2 h-4 w-4" />Baixar PDF</Button>
+                  <Button variant="outline" size="sm" className="col-span-2 gradient-gold text-primary-foreground border-0" onClick={() => handleShare(selected)}><Link2 className="mr-2 h-4 w-4" />Gerar link para cliente</Button>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-surface/30 p-4"><p className="mb-2 text-sm font-medium">Observacoes</p><p className="text-sm text-muted-foreground">{selected.notes || "Sem observacoes adicionais."}</p></div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground"><span>Fluxo principal acontece na pagina dedicada.</span><Button variant="ghost" size="sm" onClick={() => selectedExportContext && previewQuoteDocument(selectedExportContext)}><Eye className="mr-2 h-4 w-4" />Abrir previa</Button></div>
@@ -149,6 +168,32 @@ const QuotesPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="max-w-lg glass-card premium-shadow">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Link2 className="h-4 w-4" />Link público da proposta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Envie este link para o cliente. Ele pode visualizar a proposta e responder (aceitar ou recusar) sem precisar de login.
+            </p>
+            <div className="flex gap-2">
+              <Input value={shareUrl} readOnly className="font-mono text-xs" />
+              <Button variant="outline" size="icon" onClick={copyShareUrl} className="shrink-0">
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+              <p>• O link é permanente e reutilizável para esta proposta</p>
+              <p>• Quando o cliente aceitar, o status atualiza automaticamente</p>
+              <p>• Funciona apenas no mesmo dispositivo/navegador (demo)</p>
+            </div>
+            <Button className="w-full gradient-gold text-primary-foreground border-0" onClick={copyShareUrl}>
+              <Copy className="mr-2 h-4 w-4" />Copiar link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageTransition>
   );
 };

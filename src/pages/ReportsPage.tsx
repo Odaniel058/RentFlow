@@ -6,7 +6,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { KPICard } from "@/components/KPICard";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatCurrency } from "@/lib/format";
-import { downloadCsv } from "@/lib/export";
+import { downloadCsv, downloadReportPdf } from "@/lib/export";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -35,8 +35,29 @@ const ReportsPage: React.FC = () => {
     );
   };
 
-  const exportPdf = () => {
-    toast.success("Relatório pronto para exportação em PDF. Use as métricas e gráficos desta tela como base visual.");
+  const periodLabels: Record<string, string> = {
+    current: "Marco 2026",
+    feb: "Fevereiro 2026",
+    mar: "Marco 2026",
+    annual: "Anual 2026",
+  };
+
+  const exportPdf = async () => {
+    const toastId = toast.loading("Gerando PDF...");
+    try {
+      await downloadReportPdf({
+        periodLabel: periodLabels[period] ?? period,
+        reservations,
+        settings: state.settings,
+        kpis: { revenue, count: reservations.length, averageTicket, outstanding: Math.round(outstanding), completed, cancelled },
+        monthlyRevenue: analytics.monthlyRevenue,
+        reservationStatus: analytics.reservationStatus,
+        equipmentUsage: analytics.equipmentUsage,
+      });
+      toast.success("PDF gerado com sucesso.", { id: toastId });
+    } catch {
+      toast.error("Erro ao gerar o PDF. Tente novamente.", { id: toastId });
+    }
   };
 
   return (

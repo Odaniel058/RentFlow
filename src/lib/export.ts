@@ -731,3 +731,266 @@ export const downloadCsv = (filename: string, headers: string[], rows: Array<Arr
   const csv = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join("\n");
   downloadBlob(filename, new Blob([csv], { type: "text/csv;charset=utf-8;" }));
 };
+
+// ─── Report PDF ───────────────────────────────────────────────────────────────
+
+interface ReportPdfParams {
+  periodLabel: string;
+  reservations: Reservation[];
+  settings: CompanySettings;
+  kpis: {
+    revenue: number;
+    count: number;
+    averageTicket: number;
+    outstanding: number;
+    completed: number;
+    cancelled: number;
+  };
+  monthlyRevenue: Array<{ month: string; revenue: number }>;
+  reservationStatus: Array<{ name: string; value: number; fill: string }>;
+  equipmentUsage: Array<{ name: string; count: number; revenue: number }>;
+}
+
+export const downloadReportPdf = async (params: ReportPdfParams) => {
+  const { periodLabel, reservations, settings, kpis, monthlyRevenue, reservationStatus, equipmentUsage } = params;
+
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 40;
+  const gold: [number, number, number] = [201, 157, 45];
+  const goldLight: [number, number, number] = [248, 241, 221];
+  const ink: [number, number, number] = [22, 24, 29];
+  const muted: [number, number, number] = [100, 110, 125];
+  const line: [number, number, number] = [221, 225, 232];
+  const surface: [number, number, number] = [250, 250, 252];
+
+  const generatedAt = new Date().toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const addPageFooter = (pageNum: number) => {
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      `Gerado pelo RentFlow em ${generatedAt} • Página ${pageNum}`,
+      pageWidth - margin,
+      pageHeight - 18,
+      { align: "right" },
+    );
+    doc.text(settings.companyName || "RentFlow", margin, pageHeight - 18);
+  };
+
+  // ── Header bar ──────────────────────────────────────────────────────────────
+  doc.setFillColor(...gold);
+  doc.rect(0, 0, pageWidth, 70, "F");
+
+  const logoDataUrl = await loadImageAsDataUrl(settings.logoUrl);
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, "PNG", margin, 9, 52, 52);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    doc.text("RELATORIO GERENCIAL", margin + 64, 34);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 210);
+    doc.text(`${settings.companyName} • Periodo: ${periodLabel}`, margin + 64, 54);
+  } else {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    doc.text("RELATORIO GERENCIAL", margin, 34);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 210);
+    doc.text(`${settings.companyName || "RentFlow"} • Periodo: ${periodLabel}`, margin, 54);
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(255, 255, 255);
+  doc.text(`${reservations.length} reservas`, pageWidth - margin, 38, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 210);
+  doc.text("no periodo selecionado", pageWidth - margin, 54, { align: "right" });
+
+  // ── KPI section ─────────────────────────────────────────────────────────────
+  let cursorY = 90;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...muted);
+  doc.text("INDICADORES DO PERIODO", margin, cursorY);
+  cursorY += 14;
+
+  const kpiData = [
+    { label: "Faturamento", value: money(kpis.revenue) },
+    { label: "Reservas", value: String(kpis.count) },
+    { label: "Ticket medio", value: money(kpis.averageTicket) },
+    { label: "Em aberto", value: money(kpis.outstanding) },
+    { label: "Concluidas", value: String(kpis.completed) },
+    { label: "Canceladas", value: String(kpis.cancelled) },
+  ];
+
+  const kpiCols = 3;
+  const kpiW = (pageWidth - margin * 2 - (kpiCols - 1) * 10) / kpiCols;
+  const kpiH = 60;
+
+  kpiData.forEach((kpi, i) => {
+    const col = i % kpiCols;
+    const row = Math.floor(i / kpiCols);
+    const x = margin + col * (kpiW + 10);
+    const y = cursorY + row * (kpiH + 8);
+
+    doc.setFillColor(...surface);
+    doc.setDrawColor(...line);
+    doc.roundedRect(x, y, kpiW, kpiH, 10, 10, "FD");
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...muted);
+    doc.text(kpi.label.toUpperCase(), x + 14, y + 20);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...ink);
+    doc.text(kpi.value, x + 14, y + 44);
+  });
+
+  cursorY += Math.ceil(kpiData.length / kpiCols) * (kpiH + 8) + 20;
+
+  // ── Monthly revenue table ───────────────────────────────────────────────────
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...muted);
+  doc.text("FATURAMENTO MENSAL", margin, cursorY);
+  cursorY += 8;
+
+  const totalRevenue = monthlyRevenue.reduce((s, m) => s + m.revenue, 0);
+
+  autoTable(doc, {
+    startY: cursorY,
+    margin: { left: margin, right: margin },
+    head: [["Mes", "Faturamento", "% do total"]],
+    body: monthlyRevenue.map((m) => [
+      m.month,
+      money(m.revenue),
+      totalRevenue > 0 ? `${((m.revenue / totalRevenue) * 100).toFixed(1)}%` : "0%",
+    ]),
+    theme: "grid",
+    headStyles: { fillColor: goldLight, textColor: [117, 85, 18], fontStyle: "bold", lineColor: line, lineWidth: 0.6 },
+    bodyStyles: { textColor: ink, lineColor: line, lineWidth: 0.5, fontSize: 10, cellPadding: 7 },
+    columnStyles: {
+      0: { cellWidth: 180 },
+      1: { halign: "right" },
+      2: { halign: "right", cellWidth: 90 },
+    },
+    alternateRowStyles: { fillColor: surface },
+    didDrawPage: (data) => addPageFooter(data.pageNumber),
+  });
+
+  cursorY = (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? cursorY + 100;
+  cursorY += 20;
+
+  // ── Status + Equipment usage (side by side) ─────────────────────────────────
+  const halfW = (pageWidth - margin * 2 - 14) / 2;
+
+  // Status table (left)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...muted);
+  doc.text("STATUS DAS RESERVAS", margin, cursorY);
+
+  autoTable(doc, {
+    startY: cursorY + 8,
+    margin: { left: margin, right: margin + halfW + 14 },
+    head: [["Status", "Qtd"]],
+    body: reservationStatus.map((s) => [s.name, String(s.value)]),
+    theme: "grid",
+    headStyles: { fillColor: goldLight, textColor: [117, 85, 18], fontStyle: "bold", lineColor: line, lineWidth: 0.6 },
+    bodyStyles: { textColor: ink, lineColor: line, lineWidth: 0.5, fontSize: 10, cellPadding: 7 },
+    columnStyles: { 1: { halign: "right", cellWidth: 50 } },
+    alternateRowStyles: { fillColor: surface },
+  });
+
+  const statusFinalY = (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? cursorY + 80;
+
+  // Equipment usage table (right)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...muted);
+  doc.text("EQUIPAMENTOS MAIS LOCADOS", margin + halfW + 14, cursorY);
+
+  autoTable(doc, {
+    startY: cursorY + 8,
+    margin: { left: margin + halfW + 14, right: margin },
+    head: [["Equipamento", "Loc.", "Receita"]],
+    body: equipmentUsage.slice(0, 8).map((e) => [e.name, String(e.count), money(e.revenue)]),
+    theme: "grid",
+    headStyles: { fillColor: goldLight, textColor: [117, 85, 18], fontStyle: "bold", lineColor: line, lineWidth: 0.6 },
+    bodyStyles: { textColor: ink, lineColor: line, lineWidth: 0.5, fontSize: 10, cellPadding: 7 },
+    columnStyles: {
+      0: { overflow: "linebreak" },
+      1: { halign: "right", cellWidth: 36 },
+      2: { halign: "right", cellWidth: 84 },
+    },
+    alternateRowStyles: { fillColor: surface },
+  });
+
+  const equipFinalY = (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? cursorY + 80;
+
+  cursorY = Math.max(statusFinalY, equipFinalY) + 24;
+
+  // ── Reservation detail table ────────────────────────────────────────────────
+  if (cursorY > pageHeight - 180) {
+    doc.addPage();
+    cursorY = margin;
+    addPageFooter(doc.getNumberOfPages());
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...muted);
+  doc.text("DETALHAMENTO DE RESERVAS", margin, cursorY);
+  cursorY += 8;
+
+  autoTable(doc, {
+    startY: cursorY,
+    margin: { left: margin, right: margin },
+    head: [["ID", "Cliente", "Status", "Retirada", "Devolucao", "Valor"]],
+    body: reservations.map((r) => [
+      r.id,
+      r.clientName,
+      r.status,
+      formatDate(r.pickupDate),
+      formatDate(r.returnDate),
+      money(r.totalValue),
+    ]),
+    theme: "grid",
+    headStyles: { fillColor: goldLight, textColor: [117, 85, 18], fontStyle: "bold", lineColor: line, lineWidth: 0.6 },
+    bodyStyles: { textColor: ink, lineColor: line, lineWidth: 0.5, fontSize: 9, cellPadding: 6, overflow: "linebreak" },
+    columnStyles: {
+      0: { cellWidth: 90 },
+      1: { cellWidth: 140 },
+      2: { cellWidth: 80 },
+      3: { halign: "center", cellWidth: 72 },
+      4: { halign: "center", cellWidth: 72 },
+      5: { halign: "right" },
+    },
+    alternateRowStyles: { fillColor: surface },
+    didDrawPage: (data) => addPageFooter(data.pageNumber),
+  });
+
+  // Final footer on last page
+  addPageFooter(doc.getNumberOfPages());
+
+  const filename = `relatorio-rentflow-${periodLabel.toLowerCase().replace(/\s+/g, "-")}.pdf`;
+  doc.save(filename);
+};

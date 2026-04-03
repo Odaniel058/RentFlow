@@ -6,6 +6,7 @@ import { AlertCircle, ArrowDownLeft, ArrowRight, ArrowUpRight, CalendarCheck, Cl
 import { PageTransition } from "@/components/PageTransition";
 import { KPICard } from "@/components/KPICard";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,14 @@ const DashboardPage: React.FC = () => {
               <Line type="monotone" dataKey="projected" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} strokeDasharray="6 4" name="Previsto" />
             </LineChart>
           </ResponsiveContainer>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card p-6 premium-shadow">
+          <div className="mb-4">
+            <h3 className="font-display font-semibold text-sm">Atividade recente</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Historico de acoes realizadas no sistema</p>
+          </div>
+          <ActivityFeed limit={8} />
         </motion.div>
       </div>
     </PageTransition>

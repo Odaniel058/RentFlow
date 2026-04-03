@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la *.tsx *.ts *.js *.css *.html)",
+      "Bash(wc -l src/**/*.tsx src/*.tsx)",
+      "Bash(ls d:/Downloads/CineGear/*.tsx d:/Downloads/CineGear/*.js d:/Downloads/CineGear/*.css)"
+    ]
+  }
+}

@@ -54,6 +54,29 @@ const FinancialPage: React.FC = () => {
 
   const outstandingTotal = pendingReservations.reduce((sum, reservation) => sum + Math.round(reservation.totalValue * 0.25), 0);
 
+  const today = new Date().toISOString().slice(0, 10);
+
+  const agingBuckets = useMemo(() => {
+    const active = state.reservations.filter((r) => r.status !== "cancelled" && r.status !== "completed");
+    const buckets = [
+      { label: "A vencer", sublabel: "Retorno futuro", colorText: "text-green-500",  colorBg: "bg-green-500",  amount: 0, count: 0 },
+      { label: "1 – 30 dias",  sublabel: "Atenção",        colorText: "text-yellow-500", colorBg: "bg-yellow-500", amount: 0, count: 0 },
+      { label: "31 – 60 dias", sublabel: "Urgente",         colorText: "text-orange-500", colorBg: "bg-orange-500", amount: 0, count: 0 },
+      { label: "61+ dias",     sublabel: "Crítico",         colorText: "text-red-500",    colorBg: "bg-red-500",    amount: 0, count: 0 },
+    ];
+    active.forEach((r) => {
+      const overdue = Math.floor((new Date(today).getTime() - new Date(r.returnDate).getTime()) / 86_400_000);
+      const v = r.totalValue;
+      if (overdue <= 0)       { buckets[0].amount += v; buckets[0].count++; }
+      else if (overdue <= 30) { buckets[1].amount += v; buckets[1].count++; }
+      else if (overdue <= 60) { buckets[2].amount += v; buckets[2].count++; }
+      else                    { buckets[3].amount += v; buckets[3].count++; }
+    });
+    return buckets;
+  }, [state.reservations, today]);
+
+  const agingTotal = agingBuckets.reduce((sum, b) => sum + b.amount, 0);
+
   const exportFinanceCsv = () => {
     downloadCsv(
       "financeiro-rentflow.csv",
@@ -162,6 +185,56 @@ const FinancialPage: React.FC = () => {
           <KPICard icon={AlertCircle} title="Valor em aberto" value={formatCurrency(analytics.kpis.outstandingAmount)} change={`${pendingReservations.length} cobranças`} changeType="negative" index={3} onClick={() => navigate("/reservations")} />
           <KPICard icon={CalendarCheck} title="Reservas aprovadas" value={String(analytics.kpis.approvedReservations)} change="+3 este mês" changeType="positive" index={4} onClick={() => navigate("/reservations")} />
         </div>
+
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 premium-shadow">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold">Aging de recebíveis</h3>
+              <p className="text-sm text-muted-foreground">Distribuição do valor em aberto por faixa de vencimento da devolução.</p>
+            </div>
+            <div className="rounded-full border border-border/60 bg-surface px-3 py-1 text-xs font-semibold text-muted-foreground shrink-0">
+              {formatCurrency(agingTotal)} total
+            </div>
+          </div>
+
+          {/* Stacked bar */}
+          {agingTotal > 0 && (
+            <div className="flex h-2.5 rounded-full overflow-hidden gap-0.5 mb-6">
+              {agingBuckets.filter((b) => b.amount > 0).map((b) => (
+                <div
+                  key={b.label}
+                  className={`${b.colorBg} opacity-75 transition-all duration-500`}
+                  style={{ width: `${(b.amount / agingTotal) * 100}%` }}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {agingBuckets.map((b) => (
+              <div key={b.label} className="rounded-2xl border border-border/50 bg-surface/40 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${b.colorBg}`} />
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{b.label}</p>
+                </div>
+                <div>
+                  <p className={`text-xl font-bold ${b.amount > 0 ? b.colorText : "text-muted-foreground/40"}`}>
+                    {formatCurrency(b.amount)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {b.count} reserva{b.count !== 1 ? "s" : ""} · {b.sublabel}
+                  </p>
+                </div>
+                <div className="h-1 rounded-full bg-border/40">
+                  <div
+                    className={`h-1 rounded-full ${b.colorBg} transition-all duration-700`}
+                    style={{ width: agingTotal > 0 ? `${(b.amount / agingTotal) * 100}%` : "0%" }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
 
         <section className="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
           <div className="space-y-6">

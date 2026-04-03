@@ -20,6 +20,7 @@ import {
   initialAppData,
 } from "@/data/mock-data";
 import { useAuth } from "@/contexts/AuthContext";
+import { logActivity } from "@/lib/activityLog";
 
 const STORAGE_KEY = "rentflow_tenant_store_v2";
 const LEGACY_STORAGE_KEY = "cinegear_app_data";
@@ -256,6 +257,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? current.equipment.map((item) => (item.id === payload.id ? record : item))
             : [record, ...current.equipment],
         }));
+        if (user && !payload.id) logActivity(user.tenantId, user.name, "created", "equipment", record.id, `Equipamento adicionado: ${record.name}`);
         return record;
       },
       deleteEquipment: (id) => {
@@ -277,6 +279,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? current.clients.map((item) => (item.id === payload.id ? record : item))
             : [record, ...current.clients],
         }));
+        if (user && !payload.id) logActivity(user.tenantId, user.name, "created", "client", record.id, `Cliente cadastrado: ${record.name}`);
         return record;
       },
       deleteClient: (id) => {
@@ -293,15 +296,18 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? current.reservations.map((item) => (item.id === payload.id ? record : item))
             : [record, ...current.reservations],
         }));
+        if (user) logActivity(user.tenantId, user.name, payload.id ? "updated" : "created", "reservation", record.id, payload.id ? `Reserva atualizada: ${record.clientName}` : `Nova reserva para ${record.clientName}`);
         return record;
       },
       deleteReservation: (id) => {
+        const target = state.reservations.find((r) => r.id === id);
         updateTenantState((current) => ({
           ...current,
           reservations: current.reservations.filter((item) => item.id !== id),
           agendaEvents: current.agendaEvents.filter((item) => item.reservationId !== id),
           contracts: current.contracts.filter((item) => item.reservationId !== id),
         }));
+        if (user && target) logActivity(user.tenantId, user.name, "deleted", "reservation", id, `Reserva removida: ${target.clientName}`);
       },
       upsertQuote: (payload) => {
         const record = upsertRecord(
@@ -315,6 +321,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? current.quotes.map((item) => (item.id === payload.id ? record : item))
             : [record, ...current.quotes],
         }));
+        if (user && !payload.id) logActivity(user.tenantId, user.name, "created", "quote", record.id, `Proposta criada para ${record.clientName}`);
         return record;
       },
       deleteQuote: (id) => {
@@ -360,6 +367,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           ],
         }));
 
+        if (user) logActivity(user.tenantId, user.name, "converted", "quote", quoteId, `Proposta convertida em reserva: ${quote.clientName}`);
         return record;
       },
       upsertKit: (payload) => {
@@ -379,6 +387,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }));
       },
       upsertContract: (payload) => {
+        const prevContract = payload.id ? state.contracts.find((c) => c.id === payload.id) : undefined;
         const record = upsertRecord(state.contracts, payload, "CTR");
         updateTenantState((current) => ({
           ...current,
@@ -386,6 +395,10 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? current.contracts.map((item) => (item.id === payload.id ? record : item))
             : [record, ...current.contracts],
         }));
+        if (user) {
+          if (!payload.id) logActivity(user.tenantId, user.name, "created", "contract", record.id, `Contrato gerado`);
+          else if (payload.status === "signed" && prevContract?.status !== "signed") logActivity(user.tenantId, user.name, "signed", "contract", record.id, `Contrato assinado`);
+        }
         return record;
       },
       deleteContract: (id) => {

@@ -4,16 +4,24 @@ import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } fr
 import {
   ArrowRight,
   BarChart3,
+  Building2,
   CalendarDays,
+  Check,
   CheckCircle2,
   ChevronDown,
   Clock,
   DollarSign,
+  Eye,
   Film,
   FileText,
+  KeyRound,
+  Lock,
   Package,
   Play,
+  RefreshCw,
+  Server,
   Shield,
+  ShieldCheck,
   Sparkles,
   Star,
   Users,
@@ -21,6 +29,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const features = [
   {
@@ -103,6 +112,141 @@ const testimonials = [
   },
 ];
 
+const securityPillars = [
+  {
+    icon: Lock,
+    title: "Criptografia SSL/TLS",
+    desc: "Toda comunicacao entre voce e o servidor e protegida com criptografia de 256 bits, o mesmo padrao usado por bancos.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Conformidade LGPD",
+    desc: "Plataforma desenvolvida seguindo os principios da Lei Geral de Protecao de Dados. Seus dados e os de seus clientes protegidos por lei.",
+  },
+  {
+    icon: Server,
+    title: "Dados isolados por empresa",
+    desc: "Cada locadora opera em um workspace completamente isolado. Nenhuma informacao e compartilhada entre contas.",
+  },
+  {
+    icon: KeyRound,
+    title: "Controle de acesso",
+    desc: "Permissoes por nivel de usuario, autenticacao segura e historico de acoes para rastreabilidade total da equipe.",
+  },
+  {
+    icon: RefreshCw,
+    title: "Backups automaticos diarios",
+    desc: "Seus dados sao copiados automaticamente todos os dias. Em caso de qualquer incidente, a restauracao e rapida e completa.",
+  },
+  {
+    icon: Eye,
+    title: "Monitoramento 24/7",
+    desc: "Infraestrutura monitorada continuamente com alertas automaticos. SLA de 99,9% de disponibilidade garantido por contrato.",
+  },
+];
+
+const trustBadges = [
+  { label: "LGPD Compliant" },
+  { label: "SSL 256-bit" },
+  { label: "Dados Isolados" },
+  { label: "Backup Diario" },
+  { label: "Uptime 99,9%" },
+  { label: "Zero Compartilhamento" },
+];
+
+const faqs = [
+  {
+    q: "Preciso instalar alguma coisa?",
+    a: "Nao. O RentFlow e 100% na nuvem. Acesse pelo navegador em qualquer computador, notebook ou tablet — sem instalacao, sem atualizacoes manuais.",
+  },
+  {
+    q: "Meus dados e os dos meus clientes ficam seguros?",
+    a: "Sim. Todos os dados sao criptografados com SSL 256-bit e armazenados em servidores seguros. Sua conta e completamente isolada de outras empresas. A plataforma segue os principios da LGPD.",
+  },
+  {
+    q: "Posso migrar minha planilha ou sistema atual para o RentFlow?",
+    a: "Sim. Nossa equipe oferece suporte na importacao de planilhas Excel e dados de sistemas legados. O onboarding guiado ajuda a cadastrar equipamentos e clientes rapidamente.",
+  },
+  {
+    q: "Quantos usuarios posso ter na minha equipe?",
+    a: "Depende do plano escolhido. O Starter comporta 1 usuario, o Business ate 5, e o Enterprise e ilimitado — ideal para equipes grandes com diferentes niveis de acesso.",
+  },
+  {
+    q: "O que acontece quando os 14 dias de teste acabam?",
+    a: "Voce escolhe o plano ideal e continua sem interrupcao. Se decidir nao assinar, seus dados ficam disponiveis para exportacao por 30 dias. Sem cobrancas surpresa.",
+  },
+  {
+    q: "O sistema funciona para qualquer tipo de equipamento audiovisual?",
+    a: "Sim. O RentFlow e flexivel para cameras, lentes, iluminacao, audio, drones, geradores, grip e qualquer categoria que voce precise cadastrar. As categorias sao totalmente personalizaveis.",
+  },
+  {
+    q: "Tem suporte em portugues?",
+    a: "Sim, todo o suporte e em portugues. O plano Starter tem suporte por e-mail, o Business por chat prioritario e o Enterprise tem gerente de conta dedicado com SLA garantido.",
+  },
+  {
+    q: "Posso cancelar a qualquer momento?",
+    a: "Sim. Nao ha fidelidade minima. Cancele quando quiser, sem multas ou taxas adicionais. Seus dados podem ser exportados a qualquer momento.",
+  },
+];
+
+const plans = [
+  {
+    name: "Starter",
+    icon: Package,
+    price: { monthly: "197", annual: "157" },
+    desc: "Para locadoras em fase inicial que querem organizar a operacao.",
+    items: [
+      "Ate 50 equipamentos cadastrados",
+      "1 usuario",
+      "Reservas e orcamentos",
+      "Gestao de clientes",
+      "Relatorios basicos em PDF",
+      "Suporte por e-mail",
+    ],
+    cta: "Comecar gratis",
+    highlighted: false,
+    badge: null,
+  },
+  {
+    name: "Business",
+    icon: BarChart3,
+    price: { monthly: "497", annual: "397" },
+    desc: "Para operacoes em crescimento que precisam de mais controle e equipe.",
+    items: [
+      "Ate 300 equipamentos cadastrados",
+      "Ate 5 usuarios",
+      "Tudo do Starter",
+      "Contratos com assinatura digital",
+      "Gestao financeira completa",
+      "Relatorios avancados e exportacao",
+      "Agenda e calendario visual",
+      "Suporte prioritario por chat",
+    ],
+    cta: "Comecar gratis",
+    highlighted: true,
+    badge: "Mais popular",
+  },
+  {
+    name: "Enterprise",
+    icon: Building2,
+    price: { monthly: null, annual: null },
+    desc: "Para grandes locadoras com multiplas equipes e necessidades customizadas.",
+    items: [
+      "Equipamentos ilimitados",
+      "Usuarios ilimitados",
+      "Tudo do Business",
+      "Integracoes customizadas",
+      "Gerente de conta dedicado",
+      "SLA 99,9% de uptime",
+      "Onboarding personalizado",
+      "Suporte 24/7 com SLA garantido",
+    ],
+    cta: "Falar com especialista",
+    highlighted: false,
+    badge: null,
+  },
+];
+
 const heroStats = [
   { label: "Inventario", value: "156 itens" },
   { label: "Reservas", value: "48 ativas" },
@@ -169,6 +313,7 @@ const LandingPage: React.FC = () => {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, reduceMotion ? 1 : 0.2]);
   const progressScale = useTransform(scrollYProgress, [0, 1], [0, 1]);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [billingAnnual, setBillingAnnual] = useState(false);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -207,6 +352,15 @@ const LandingPage: React.FC = () => {
               </a>
               <a href="#benefits" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Para Locadoras
+              </a>
+              <a href="#security" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Seguranca
+              </a>
+              <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                FAQ
+              </a>
+              <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Precos
               </a>
             </div>
 
@@ -527,6 +681,279 @@ const LandingPage: React.FC = () => {
               />
             ))}
           </div>
+        </div>
+      </section>
+
+      <section id="security" className="py-24 border-t border-border/50 bg-surface/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary mb-6">
+              <ShieldCheck className="h-3 w-3" />
+              Seguranca e conformidade
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              Seus dados protegidos.<br className="hidden sm:block" /> Nossa responsabilidade.
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Empresas grandes confiam no RentFlow porque seguranca nao e opcional. E a base de tudo que construimos.
+            </p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {securityPillars.map((pillar, index) => (
+              <motion.div
+                key={pillar.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.08, duration: 0.45 }}
+                className="flex gap-4 rounded-2xl border border-border/60 bg-background/60 p-6 hover:border-primary/30 transition-colors duration-200"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <pillar.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold tracking-tight mb-2">{pillar.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{pillar.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border border-border/60 bg-background/60 p-8"
+          >
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="flex-1 text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-semibold uppercase tracking-widest text-primary">Certificacoes e garantias</span>
+                </div>
+                <h3 className="font-display text-2xl font-bold tracking-tight mb-2">
+                  Conformidade que empresas grandes exigem
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-md">
+                  Atendemos os requisitos de seguranca e privacidade necessarios para operar com produtoras, emissoras e grandes empresas do setor audiovisual.
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-3">
+                {trustBadges.map((badge) => (
+                  <div
+                    key={badge.label}
+                    className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5"
+                  >
+                    <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="text-xs font-semibold tracking-wide">{badge.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <section id="pricing" className="py-24 border-t border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Planos para cada tamanho de operacao</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Comece gratis por 14 dias. Sem cartao de credito. Cancele quando quiser.
+            </p>
+
+            <div className="mt-8 inline-flex items-center gap-3 rounded-2xl border border-border bg-surface/60 p-1.5">
+              <button
+                onClick={() => setBillingAnnual(false)}
+                className={`rounded-xl px-5 py-2 text-sm font-medium transition-all duration-200 ${
+                  !billingAnnual
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Mensal
+              </button>
+              <button
+                onClick={() => setBillingAnnual(true)}
+                className={`flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-medium transition-all duration-200 ${
+                  billingAnnual
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Anual
+                <span className="rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-semibold text-green-500">
+                  -20%
+                </span>
+              </button>
+            </div>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6 items-stretch">
+            {plans.map((plan, index) => (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                className={`relative flex flex-col rounded-3xl border p-8 transition-all duration-300 ${
+                  plan.highlighted
+                    ? "border-primary/60 bg-primary/5 shadow-[0_0_40px_-8px_hsl(var(--primary)/0.3)]"
+                    : "border-border/60 bg-surface/50 hover:border-border"
+                }`}
+              >
+                {plan.badge && (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <span className="rounded-full gradient-gold px-4 py-1 text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-md">
+                      {plan.badge}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 mb-6">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${plan.highlighted ? "gradient-gold" : "bg-muted"}`}>
+                    <plan.icon className={`h-5 w-5 ${plan.highlighted ? "text-primary-foreground" : "text-muted-foreground"}`} />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg font-bold tracking-tight">{plan.name}</h3>
+                    <p className="text-xs text-muted-foreground">{plan.desc}</p>
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  {plan.price.monthly ? (
+                    <div className="flex items-end gap-1">
+                      <span className="text-sm text-muted-foreground mt-1">R$</span>
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={billingAnnual ? "annual" : "monthly"}
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 8 }}
+                          transition={{ duration: 0.2 }}
+                          className="font-display text-5xl font-bold tracking-tight"
+                        >
+                          {billingAnnual ? plan.price.annual : plan.price.monthly}
+                        </motion.span>
+                      </AnimatePresence>
+                      <span className="text-sm text-muted-foreground mb-1">/mes</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-3xl font-bold tracking-tight">Sob consulta</span>
+                    </div>
+                  )}
+                  {billingAnnual && plan.price.annual && (
+                    <p className="mt-1 text-xs text-green-500 font-medium">
+                      Voce economiza R$ {(Number(plan.price.monthly) - Number(plan.price.annual)) * 12}/ano
+                    </p>
+                  )}
+                </div>
+
+                <ul className="flex-1 space-y-3 mb-8">
+                  {plan.items.map((item) => (
+                    <li key={item} className="flex items-start gap-3 text-sm">
+                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span className="text-muted-foreground leading-snug">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link to={plan.name === "Enterprise" ? "/signup" : "/signup"}>
+                  <Button
+                    size="lg"
+                    className={`w-full h-12 rounded-2xl text-sm font-semibold ${
+                      plan.highlighted
+                        ? "gradient-gold text-primary-foreground hover:opacity-90"
+                        : "border border-border bg-background hover:bg-muted"
+                    }`}
+                    variant={plan.highlighted ? "default" : "outline"}
+                  >
+                    {plan.cta}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="mt-10 text-center text-sm text-muted-foreground"
+          >
+            Todos os planos incluem 14 dias gratis sem necessidade de cartao de credito.{" "}
+            <a href="#" className="text-primary underline-offset-4 hover:underline">
+              Ver todos os detalhes dos planos
+            </a>
+          </motion.p>
+        </div>
+      </section>
+
+      <section id="faq" className="py-24 border-t border-border/50 bg-surface/40">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Perguntas frequentes</h2>
+            <p className="text-muted-foreground text-lg">
+              Tire suas duvidas antes de comecar. Se nao encontrar o que precisa, fale com a gente.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <Accordion type="single" collapsible className="space-y-3">
+              {faqs.map((faq, index) => (
+                <AccordionItem
+                  key={index}
+                  value={`faq-${index}`}
+                  className="rounded-2xl border border-border/60 bg-background/60 px-6 data-[state=open]:border-primary/40 transition-colors duration-200"
+                >
+                  <AccordionTrigger className="py-5 text-left font-semibold hover:no-underline hover:text-primary transition-colors [&[data-state=open]]:text-primary">
+                    {faq.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-5 text-sm leading-relaxed text-muted-foreground">
+                    {faq.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="mt-12 text-center rounded-2xl border border-border/60 bg-background/60 p-8"
+          >
+            <p className="font-semibold mb-1">Ainda tem duvidas?</p>
+            <p className="text-sm text-muted-foreground mb-5">
+              Nossa equipe responde em ate 2 horas uteis. Fale com a gente diretamente.
+            </p>
+            <Link to="/signup">
+              <Button variant="outline" className="rounded-xl border-primary/40 text-primary hover:bg-primary/5">
+                Entrar em contato
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </motion.div>
         </div>
       </section>
 

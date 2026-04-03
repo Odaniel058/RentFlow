@@ -15,12 +15,14 @@ import {
   Wrench,
   Wallet,
   Boxes,
+  TrendingUp,
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useAppData } from "@/contexts/AppDataContext";
 import { Equipment, EquipmentStatus } from "@/data/mock-data";
 import { formatCurrency } from "@/lib/format";
+import { EquipmentQRCode } from "@/components/EquipmentQRCode";
 import { getInventoryCategoryOptions, getOperationalEquipmentStatus, INVENTORY_STATUS_OPTIONS } from "@/lib/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,6 +123,23 @@ const InventoryPage: React.FC = () => {
     });
     return [...groups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
   }, [state.equipment]);
+
+  const UTIL_WINDOW = 90; // reference days
+  const utilizationMap = useMemo(() => {
+    const map = new Map<string, { rentedDays: number; rate: number; revenue: number }>();
+    state.equipment.forEach((eq) => {
+      const active = state.reservations.filter((r) => r.status !== "cancelled" && r.equipmentIds.includes(eq.id));
+      const rentedDays = active.reduce((sum, r) => sum + Math.max(1, Math.ceil((new Date(r.returnDate).getTime() - new Date(r.pickupDate).getTime()) / 86_400_000)), 0);
+      const revenue = Math.round(active.reduce((sum, r) => sum + r.totalValue / Math.max(1, r.equipmentIds.length), 0));
+      map.set(eq.id, { rentedDays, rate: Math.min(100, Math.round((rentedDays / UTIL_WINDOW) * 100)), revenue });
+    });
+    return map;
+  }, [state.equipment, state.reservations]);
+
+  const utilizationRanking = useMemo(
+    () => [...state.equipment].sort((a, b) => (utilizationMap.get(b.id)?.rate ?? 0) - (utilizationMap.get(a.id)?.rate ?? 0)).slice(0, 10),
+    [state.equipment, utilizationMap],
+  );
 
   const openCreate = () => {
     setForm({ ...emptyForm, category: categoryOptions[0] ?? "" });
@@ -447,6 +466,7 @@ const InventoryPage: React.FC = () => {
                       <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Status</th>
                       <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Local</th>
                       <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Diaria</th>
+                      <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Utilização</th>
                       <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Acoes</th>
                     </tr>
                   </thead>
@@ -477,6 +497,9 @@ const InventoryPage: React.FC = () => {
                         <td className="px-5 py-4"><StatusBadge status={item.operationalStatus} /></td>
                         <td className="px-5 py-4 text-sm text-muted-foreground">{item.location}</td>
                         <td className="px-5 py-4 text-right text-sm font-semibold">{formatCurrency(item.dailyRate)}</td>
+                        <td className="px-5 py-4">
+                          {(() => { const u = utilizationMap.get(item.id); if (!u) return null; const color = u.rate >= 70 ? "bg-green-500" : u.rate >= 40 ? "bg-yellow-500" : "bg-muted-foreground/40"; return (<div className="flex items-center gap-2"><div className="w-14 h-1.5 rounded-full bg-border/50"><div className={`h-1.5 rounded-full ${color}`} style={{ width: `${u.rate}%` }} /></div><span className="text-xs text-muted-foreground">{u.rate}%</span></div>); })()}
+                        </td>
                         <td className="px-5 py-4">
                           <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); openEdit(item); }}>
@@ -530,6 +553,28 @@ const InventoryPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {(() => {
+                    const u = utilizationMap.get(selected.id);
+                    if (!u) return null;
+                    const color = u.rate >= 70 ? "text-green-500" : u.rate >= 40 ? "text-yellow-500" : "text-muted-foreground";
+                    const barColor = u.rate >= 70 ? "bg-green-500" : u.rate >= 40 ? "bg-yellow-500" : "bg-muted-foreground/50";
+                    return (
+                      <div className="rounded-2xl border border-border/60 bg-surface/40 p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Utilização (90 dias)</p>
+                          <span className={`text-sm font-bold ${color}`}>{u.rate}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-border/40">
+                          <div className={`h-2 rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${u.rate}%` }} />
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{u.rentedDays} dias locados</span>
+                          <span className="font-semibold gradient-gold-text">{formatCurrency(u.revenue)} gerado</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Barcode className="h-4 w-4" />
@@ -573,6 +618,8 @@ const InventoryPage: React.FC = () => {
                       Excluir
                     </Button>
                   </div>
+
+                  <EquipmentQRCode equipment={selected} companyName={state.settings.companyName || "RentFlow"} />
                 </div>
               ) : (
                 <div className="py-8 text-center">
@@ -583,6 +630,46 @@ const InventoryPage: React.FC = () => {
             </div>
           </div>
         </section>
+
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 premium-shadow">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />Utilização do acervo</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">Taxa de ocupação por equipamento nos últimos {UTIL_WINDOW} dias.</p>
+            </div>
+            <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-green-500" />Alta ≥ 70%</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-yellow-500" />Média 40-69%</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-muted-foreground/40" />Baixa &lt; 40%</span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {utilizationRanking.map((eq, index) => {
+              const u = utilizationMap.get(eq.id);
+              if (!u) return null;
+              const barColor = u.rate >= 70 ? "bg-green-500" : u.rate >= 40 ? "bg-yellow-500" : "bg-muted-foreground/40";
+              const textColor = u.rate >= 70 ? "text-green-500" : u.rate >= 40 ? "text-yellow-500" : "text-muted-foreground";
+              return (
+                <div key={eq.id} className="flex items-center gap-4 cursor-pointer group" onClick={() => handleSelectEquipment(eq.id)}>
+                  <span className="text-xs text-muted-foreground w-5 shrink-0">#{index + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1.5 gap-2">
+                      <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">{eq.name}</span>
+                      <span className={`text-xs font-semibold shrink-0 ${textColor}`}>{u.rate}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-border/40">
+                      <div className={`h-1.5 rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${u.rate}%` }} />
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 min-w-[90px]">
+                    <p className="text-xs font-semibold gradient-gold-text">{formatCurrency(u.revenue)}</p>
+                    <p className="text-[10px] text-muted-foreground">{u.rentedDays}d locados</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
 
         <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
           <AlertDialogContent className="glass-card premium-shadow-lg">

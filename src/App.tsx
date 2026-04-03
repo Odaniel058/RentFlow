@@ -22,6 +22,7 @@ import ContractsPage from "./pages/ContractsPage";
 import FinancialPage from "./pages/FinancialPage";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
+import PublicQuotePage from "./pages/PublicQuotePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/proposta/:token" element={<PublicQuotePage />} />
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/inventory" element={<InventoryPage />} />

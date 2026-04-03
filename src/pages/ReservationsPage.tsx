@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Search, Plus, Pencil, Ban, Eye, ArrowRight, Clock3, ReceiptText, Sparkles, Radio } from "lucide-react";
+import { AlertTriangle, CalendarDays, Check, CheckSquare, ListChecks, Search, Plus, Pencil, Ban, Eye, ArrowRight, Clock3, ReceiptText, Sparkles, Radio } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ClientSearchSelect } from "@/components/clients/ClientSearchSelect";
@@ -39,6 +39,8 @@ const ReservationsPage: React.FC = () => {
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ clientId: "", equipmentIds: [] as string[], pickupDate: "2026-03-20", returnDate: "2026-03-22", status: "quote" as ReservationStatus, notes: "" });
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filtered = state.reservations.filter((item) => {
     const searchValue = search.toLowerCase();
@@ -55,6 +57,23 @@ const ReservationsPage: React.FC = () => {
   const selectedEquipment = state.equipment.filter((item) => form.equipmentIds.includes(item.id));
   const days = Math.max(1, Math.ceil((new Date(`${form.returnDate}T12:00:00`).getTime() - new Date(`${form.pickupDate}T12:00:00`).getTime()) / 86400000));
   const totalValue = selectedEquipment.reduce((sum, item) => sum + item.dailyRate * days, 0);
+
+  const conflicts = useMemo(() => {
+    if (!form.pickupDate || !form.returnDate || !form.equipmentIds.length) return [];
+    return state.reservations.filter((r) => {
+      if (r.id === editingId) return false;
+      if (r.status === "cancelled" || r.status === "completed") return false;
+      const overlaps = form.pickupDate <= r.returnDate && form.returnDate >= r.pickupDate;
+      if (!overlaps) return false;
+      return form.equipmentIds.some((id) => r.equipmentIds.includes(id));
+    });
+  }, [form.equipmentIds, form.pickupDate, form.returnDate, editingId, state.reservations]);
+
+  const conflictingEquipmentIds = useMemo(() => {
+    const ids = new Set<string>();
+    conflicts.forEach((r) => r.equipmentIds.forEach((id) => { if (form.equipmentIds.includes(id)) ids.add(id); }));
+    return ids;
+  }, [conflicts, form.equipmentIds]);
 
   const reservationStats = useMemo(() => {
     const approved = state.reservations.filter((item) => item.status === "approved").length;
@@ -96,6 +115,42 @@ const ReservationsPage: React.FC = () => {
     setCancelTarget(null);
   };
 
+  const toggleSelectMode = () => {
+    setSelectMode((prev) => !prev);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedIds(new Set(filtered.map((r) => r.id)));
+  const deselectAll = () => setSelectedIds(new Set());
+
+  const bulkUpdateStatus = (status: ReservationStatus) => {
+    selectedIds.forEach((id) => {
+      const res = state.reservations.find((r) => r.id === id);
+      if (res) upsertReservation({ ...res, status });
+    });
+    toast.success(`${selectedIds.size} reserva(s) atualizada(s) para "${statuses.find((s) => s.value === status)?.label}".`);
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  };
+
+  const bulkCancel = () => {
+    selectedIds.forEach((id) => {
+      const res = state.reservations.find((r) => r.id === id);
+      if (res && res.status !== "cancelled") upsertReservation({ ...res, status: "cancelled" });
+    });
+    toast.success(`${selectedIds.size} reserva(s) cancelada(s).`);
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  };
+
   return (
     <PageTransition>
       <div className="space-y-8">
@@ -112,6 +167,7 @@ const ReservationsPage: React.FC = () => {
               <div className="flex flex-wrap gap-3 self-start">
                 <Button variant="gold" size="lg" onClick={() => navigate("/quotes/new")}><Plus className="h-4 w-4" />Nova proposta / reserva</Button>
                 <Button variant="outline" size="lg" onClick={() => selected && openEdit(selected)} disabled={!selected}><Pencil className="h-4 w-4" />Editar reserva</Button>
+                <Button variant={selectMode ? "default" : "outline"} size="lg" onClick={toggleSelectMode} className={selectMode ? "gradient-gold text-primary-foreground border-0" : ""}><ListChecks className="h-4 w-4" />{selectMode ? "Cancelar seleção" : "Selecionar em lote"}</Button>
               </div>
             </div>
 
@@ -136,13 +192,27 @@ const ReservationsPage: React.FC = () => {
                   <select value={period} onChange={(event) => setPeriod(event.target.value)} className="h-10 rounded-xl border border-input bg-background px-3 text-sm"><option value="all">Todo periodo</option><option value="today">Retiradas de hoje</option><option value="week">Proximos 7 dias</option></select>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">{statuses.map((item) => <button key={item.value} type="button" onClick={() => setStatusFilter(item.value as ReservationStatus | "all")} className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${statusFilter === item.value ? "border-primary/30 bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "border-border/60 bg-surface/50 text-muted-foreground hover:border-primary/20 hover:text-foreground"}`}>{item.label}</button>)}</div>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+              {statuses.map((item) => <button key={item.value} type="button" onClick={() => setStatusFilter(item.value as ReservationStatus | "all")} className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${statusFilter === item.value ? "border-primary/30 bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "border-border/60 bg-surface/50 text-muted-foreground hover:border-primary/20 hover:text-foreground"}`}>{item.label}</button>)}
+              {selectMode && (
+                <div className="ml-auto flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{selectedIds.size} selecionada(s)</span>
+                  <button type="button" onClick={selectAll} className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors">Todas ({filtered.length})</button>
+                  {selectedIds.size > 0 && <button type="button" onClick={deselectAll} className="rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">Limpar</button>}
+                </div>
+              )}
+            </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               {filtered.map((reservation, index) => (
-                <motion.button key={reservation.id} type="button" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} onClick={() => setSelectedId(reservation.id)} className={`group rounded-[24px] border p-5 text-left transition-all duration-300 ${selectedId === reservation.id ? "border-primary/30 bg-primary/6 premium-shadow-lg" : "border-border/60 bg-card premium-shadow hover:-translate-y-1 hover:border-primary/20 hover:premium-shadow-lg"}`}>
-                  <div className="mb-4 flex items-start justify-between gap-4"><div><p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{reservation.id}</p><h3 className="mt-2 text-lg font-semibold">{reservation.clientName}</h3></div><StatusBadge status={reservation.status} /></div>
+                <motion.button key={reservation.id} type="button" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} onClick={() => selectMode ? toggleSelect(reservation.id) : setSelectedId(reservation.id)} className={`group relative rounded-[24px] border p-5 text-left transition-all duration-300 ${selectMode && selectedIds.has(reservation.id) ? "border-primary/50 bg-primary/8 premium-shadow-lg ring-2 ring-primary/20" : selectedId === reservation.id && !selectMode ? "border-primary/30 bg-primary/6 premium-shadow-lg" : "border-border/60 bg-card premium-shadow hover:-translate-y-1 hover:border-primary/20 hover:premium-shadow-lg"}`}>
+                  {selectMode && (
+                    <div className={`absolute top-4 right-4 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors ${selectedIds.has(reservation.id) ? "bg-primary border-primary" : "border-border bg-background"}`}>
+                      {selectedIds.has(reservation.id) && <Check className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                  )}
+                  <div className="mb-4 flex items-start justify-between gap-4"><div><p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{reservation.id}</p><h3 className="mt-2 text-lg font-semibold">{reservation.clientName}</h3></div>{!selectMode && <StatusBadge status={reservation.status} />}{selectMode && <StatusBadge status={reservation.status} />}</div>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between gap-3"><span>Periodo</span><span className="font-medium text-foreground">{formatDate(reservation.pickupDate)} → {formatDate(reservation.returnDate)}</span></div>
                     <div className="flex items-center justify-between gap-3"><span>Itens</span><span className="font-medium text-foreground">{reservation.equipment.length}</span></div>
@@ -195,20 +265,65 @@ const ReservationsPage: React.FC = () => {
               <div className="grid sm:grid-cols-2 gap-2 max-h-56 overflow-auto rounded-2xl border border-border/60 p-3 bg-surface/40">
                 {state.equipment.map((item) => {
                   const checked = form.equipmentIds.includes(item.id);
+                  const hasConflict = conflictingEquipmentIds.has(item.id);
                   return (
-                    <label key={item.id} className="flex items-start gap-3 rounded-xl border border-border/50 p-3 cursor-pointer hover:bg-surface">
+                    <label key={item.id} className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-colors hover:bg-surface ${hasConflict ? "border-amber-500/40 bg-amber-500/5" : "border-border/50"}`}>
                       <input type="checkbox" checked={checked} onChange={(event) => setForm((current) => ({ ...current, equipmentIds: event.target.checked ? [...current.equipmentIds, item.id] : current.equipmentIds.filter((equipmentId) => equipmentId !== item.id) }))} className="mt-1" />
-                      <div className="min-w-0"><p className="text-sm font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{formatCurrency(item.dailyRate)} / dia • {item.status}</p></div>
+                      <div className="min-w-0 flex-1"><p className="text-sm font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{formatCurrency(item.dailyRate)} / dia • {item.status}</p></div>
+                      {hasConflict && <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />}
                     </label>
                   );
                 })}
               </div>
             </div>
             <div className="space-y-2"><Label>Observacoes</Label><Textarea rows={4} value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></div>
+            {conflicts.length > 0 && (
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/8 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">Conflito de equipamento detectado</p>
+                    <p className="text-xs text-muted-foreground mt-1">{conflicts.length} reserva{conflicts.length > 1 ? "s" : ""} com equipamentos sobrepostos no mesmo período:</p>
+                    <div className="mt-2 space-y-1">
+                      {conflicts.map((r) => (
+                        <p key={r.id} className="text-xs">
+                          <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">{r.id}</span>
+                          {" · "}{r.clientName}{" · "}{formatDate(r.pickupDate)} → {formatDate(r.returnDate)}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4"><p className="text-sm font-medium mb-1">Resumo da reserva</p><p className="text-sm text-muted-foreground">{selectedEquipment.length} itens • {days} diaria(s)</p><p className="text-lg font-semibold gradient-gold-text mt-2">{formatCurrency(totalValue)}</p></div>
             <div className="flex justify-end gap-3"><Button variant="outline" onClick={() => setEditorOpen(false)}>Cancelar</Button><Button variant="gold" onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar reserva"}</Button></div>
           </DialogContent>
         </Dialog>
+
+        <AnimatePresence>
+          {selectMode && selectedIds.size > 0 && (
+            <motion.div
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+              className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-2xl border border-border/60 bg-card/95 shadow-2xl backdrop-blur-xl px-4 py-2.5"
+            >
+              <div className="flex items-center gap-2 pr-3 border-r border-border/60">
+                <CheckSquare className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold whitespace-nowrap">{selectedIds.size} selecionada{selectedIds.size !== 1 ? "s" : ""}</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("approved")} className="text-xs">Aprovar</Button>
+              <Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("in_progress")} className="text-xs">Em andamento</Button>
+              <Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("completed")} className="text-xs">Finalizar</Button>
+              <Button size="sm" variant="outline" onClick={bulkCancel} className="text-xs text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60">Cancelar</Button>
+              <div className="pl-2 border-l border-border/60">
+                <Button size="sm" variant="ghost" onClick={deselectAll} className="text-xs text-muted-foreground">Limpar</Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AlertDialog open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
           <AlertDialogContent className="glass-card premium-shadow-lg">
