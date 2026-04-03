@@ -9,6 +9,7 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  Menu,
   Clock,
   DollarSign,
   Eye,
@@ -25,6 +26,7 @@ import {
   Sparkles,
   Star,
   Users,
+  X,
   Zap,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -314,6 +316,7 @@ const LandingPage: React.FC = () => {
   const progressScale = useTransform(scrollYProgress, [0, 1], [0, 1]);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [billingAnnual, setBillingAnnual] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -321,6 +324,15 @@ const LandingPage: React.FC = () => {
     }, 4200);
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileMenuOpen]);
 
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
@@ -364,7 +376,7 @@ const LandingPage: React.FC = () => {
               </a>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
               <Link to="/login">
                 <Button variant="ghost" size="sm" className="rounded-xl">
                   Entrar
@@ -376,9 +388,75 @@ const LandingPage: React.FC = () => {
                 </Button>
               </Link>
             </div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="md:hidden rounded-xl"
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
           </div>
         </div>
       </motion.nav>
+
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.button
+              type="button"
+              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -18 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="fixed inset-x-4 top-[88px] z-50 rounded-[28px] border border-white/10 bg-[#131313]/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl md:hidden"
+            >
+              <div className="space-y-2">
+                {[
+                  { href: "#features", label: "Funcionalidades" },
+                  { href: "#how-it-works", label: "Como funciona" },
+                  { href: "#benefits", label: "Para Locadoras" },
+                  { href: "#security", label: "Seguranca" },
+                  { href: "#faq", label: "FAQ" },
+                  { href: "#pricing", label: "Precos" },
+                ].map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    className="block rounded-2xl px-4 py-3 text-sm text-white/80 transition hover:bg-white/5 hover:text-white"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+
+              <div className="mt-5 grid gap-3">
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="h-11 w-full rounded-2xl border-white/15 bg-white/5 text-white hover:bg-white/10">
+                    Entrar
+                  </Button>
+                </Link>
+                <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="h-11 w-full rounded-2xl gradient-gold text-primary-foreground hover:opacity-90">
+                    Criar conta
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <section className="relative min-h-screen overflow-hidden">
         <div className="absolute inset-0 gradient-cinematic" />
@@ -432,14 +510,14 @@ const LandingPage: React.FC = () => {
               transition={{ delay: 0.6, duration: 0.55 }}
               className="mt-9 flex flex-col gap-4 sm:flex-row"
             >
-              <Link to="/signup">
-                <Button size="lg" className="h-14 rounded-2xl px-8 text-base gradient-gold text-primary-foreground hover:opacity-90">
+              <Link to="/signup" className="sm:w-auto">
+                <Button size="lg" className="h-14 w-full rounded-2xl px-8 text-base gradient-gold text-primary-foreground hover:opacity-90 sm:w-auto">
                   Criar conta da locadora
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link to="/login">
-                <Button size="lg" variant="outline" className="h-14 rounded-2xl border-white/15 bg-white/5 px-8 text-base text-white hover:bg-white/10">
+              <Link to="/login" className="sm:w-auto">
+                <Button size="lg" variant="outline" className="h-14 w-full rounded-2xl border-white/15 bg-white/5 px-8 text-base text-white hover:bg-white/10 sm:w-auto">
                   <Play className="mr-2 h-4 w-4" />
                   Entrar
                 </Button>
@@ -477,7 +555,7 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {heroStats.map((item, index) => (
                 <motion.div
                   key={item.label}
@@ -891,7 +969,7 @@ const LandingPage: React.FC = () => {
             className="mt-10 text-center text-sm text-muted-foreground"
           >
             Todos os planos incluem 14 dias gratis sem necessidade de cartao de credito.{" "}
-            <a href="#" className="text-primary underline-offset-4 hover:underline">
+            <a href="#pricing" className="text-primary underline-offset-4 hover:underline">
               Ver todos os detalhes dos planos
             </a>
           </motion.p>

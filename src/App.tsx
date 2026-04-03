@@ -38,25 +38,47 @@ const App = () => (
             <HashRouter>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/features" element={<LandingPage />} />
+                <Route path="/how-it-works" element={<LandingPage />} />
+                <Route path="/benefits" element={<LandingPage />} />
+                <Route path="/security" element={<LandingPage />} />
+                <Route path="/pricing" element={<LandingPage />} />
+                <Route path="/faq" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/entrar" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/cadastro" element={<SignupPage />} />
                 <Route path="/proposta/:token" element={<PublicQuotePage />} />
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/inventory" element={<InventoryPage />} />
+                  <Route path="/inventario" element={<InventoryPage />} />
                   <Route path="/reservations" element={<ReservationsPage />} />
+                  <Route path="/locacoes" element={<ReservationsPage />} />
+                  <Route path="/reservas" element={<ReservationsPage />} />
                   <Route path="/quotes" element={<QuotesPage />} />
+                  <Route path="/propostas" element={<QuotesPage />} />
+                  <Route path="/orcamentos" element={<QuotesPage />} />
                   <Route path="/quotes/new" element={<QuoteComposerPage />} />
+                  <Route path="/propostas/nova" element={<QuoteComposerPage />} />
+                  <Route path="/orcamentos/novo" element={<QuoteComposerPage />} />
                   <Route path="/quotes/:quoteId/edit" element={<QuoteComposerPage />} />
+                  <Route path="/propostas/:quoteId/editar" element={<QuoteComposerPage />} />
                   <Route path="/calendar" element={<AgendaPage />} />
                   <Route path="/agenda" element={<AgendaPage />} />
+                  <Route path="/calendario" element={<AgendaPage />} />
                   <Route path="/clients" element={<ClientsPage />} />
+                  <Route path="/clientes" element={<ClientsPage />} />
                   <Route path="/kits" element={<KitsPage />} />
                   <Route path="/contracts" element={<ContractsPage />} />
+                  <Route path="/contratos" element={<ContractsPage />} />
                   <Route path="/finance" element={<FinancialPage />} />
                   <Route path="/financial" element={<FinancialPage />} />
+                  <Route path="/financeiro" element={<FinancialPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/relatorios" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/configuracoes" element={<SettingsPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

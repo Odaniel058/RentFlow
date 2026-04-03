@@ -64,7 +64,7 @@ export const AppLayout: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background overflow-x-hidden">
       <AppSidebar
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed((current) => !current)}
@@ -72,11 +72,11 @@ export const AppLayout: React.FC = () => {
         onToggleMobile={() => setMobileOpen((current) => !current)}
         onCloseMobile={() => setMobileOpen(false)}
       />
-      <main className="flex-1 min-w-0 overflow-auto">
+      <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
         {/* Top bar */}
-        <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-md px-6 lg:px-8">
-          <p className="text-sm font-semibold text-muted-foreground pl-10 md:pl-0">{pageTitle}</p>
-          <div className="flex items-center gap-3">
+        <div className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-border/50 bg-background/80 px-4 backdrop-blur-md sm:px-5 lg:px-8">
+          <p className="truncate pl-10 text-sm font-semibold text-muted-foreground md:pl-0">{pageTitle}</p>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <button
               onClick={() => setCmdOpen(true)}
               className="hidden md:flex items-center gap-2 rounded-xl border border-border/60 bg-background/80 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -95,7 +95,7 @@ export const AppLayout: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-6 md:pt-6 lg:p-8 max-w-[1600px] mx-auto">
+        <div className="mx-auto max-w-[1600px] p-4 sm:p-5 md:pt-6 lg:p-8">
           <Outlet />
         </div>
       </main>
