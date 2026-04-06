@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+﻿import React, { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -466,13 +466,13 @@ const InventoryPage: React.FC = () => {
                       <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Status</th>
                       <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Local</th>
                       <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Diaria</th>
-                      <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Utilização</th>
+                      <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">UtilizaÃ§Ã£o</th>
                       <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Acoes</th>
                     </tr>
                   </thead>
                   <tbody>
                     <AnimatePresence initial={false}>
-                    {filtered.map((item) => (
+                    {filtered.map((item, index) => (
                       <motion.tr
                         key={item.id}
                         initial={{ opacity: 0 }}
@@ -504,7 +504,7 @@ const InventoryPage: React.FC = () => {
                             </motion.div>
                             <div>
                               <p className="text-sm font-semibold">{item.name}</p>
-                              <p className="text-xs text-muted-foreground">{item.brand} • {item.model}</p>
+                              <p className="text-xs text-muted-foreground">{item.brand} â€¢ {item.model}</p>
                             </div>
                           </div>
                         </td>
@@ -550,7 +550,7 @@ const InventoryPage: React.FC = () => {
                     <div>
                       <p className="mb-2 text-xs uppercase tracking-[0.22em] text-muted-foreground">Detalhe do equipamento</p>
                       <h3 className="text-2xl font-semibold">{selected.name}</h3>
-                      <p className="text-sm text-muted-foreground">{selected.brand} • {selected.model}</p>
+                      <p className="text-sm text-muted-foreground">{selected.brand} â€¢ {selected.model}</p>
                     </div>
                     <StatusBadge status={selected.operationalStatus} />
                   </div>
@@ -577,7 +577,7 @@ const InventoryPage: React.FC = () => {
                     return (
                       <div className="rounded-2xl border border-border/60 bg-surface/40 p-4 space-y-2">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Utilização (90 dias)</p>
+                          <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">UtilizaÃ§Ã£o (90 dias)</p>
                           <span className={`text-sm font-bold ${color}`}>{u.rate}%</span>
                         </div>
                         <div className="h-2 rounded-full bg-border/40">
@@ -650,12 +650,12 @@ const InventoryPage: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 premium-shadow">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-semibold flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />Utilização do acervo</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">Taxa de ocupação por equipamento nos últimos {UTIL_WINDOW} dias.</p>
+              <h3 className="text-lg font-semibold flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />UtilizaÃ§Ã£o do acervo</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">Taxa de ocupaÃ§Ã£o por equipamento nos Ãºltimos {UTIL_WINDOW} dias.</p>
             </div>
             <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-green-500" />Alta ≥ 70%</span>
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-yellow-500" />Média 40-69%</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-green-500" />Alta â‰¥ 70%</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-yellow-500" />MÃ©dia 40-69%</span>
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-muted-foreground/40" />Baixa &lt; 40%</span>
             </div>
           </div>
@@ -707,3 +707,4 @@ const InventoryPage: React.FC = () => {
 };
 
 export default InventoryPage;
+

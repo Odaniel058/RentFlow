@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowDownLeft,
@@ -44,7 +44,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ModalAsideCard, ModalHero, ModalSection } from "@/components/ui/modal-shell";
 import { toast } from "sonner";
 
-/* ─── helpers ─── */
+/* â”€â”€â”€ helpers â”€â”€â”€ */
 const EVENT_COLORS: Record<string, string> = {
   pickup: "hsl(217 91% 60%)",
   return: "hsl(142 71% 45%)",
@@ -65,8 +65,9 @@ const AgendaPage: React.FC = () => {
   const [view, setView] = useState<AgendaView>("calendar");
   const [filter, setFilter] = useState<AgendaFilter>("all");
   const [focusDate, setFocusDate] = useState(new Date());
+  const [selectedDateKey, setSelectedDateKey] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  /* ─── calendar grid ─── */
+  /* â”€â”€â”€ calendar grid â”€â”€â”€ */
   const calendarStart = useMemo(() => {
     const start = dateStartOfMonth(focusDate);
     return dateStartOfWeek(start, { weekStartsOn: 0 });
@@ -131,7 +132,7 @@ const AgendaPage: React.FC = () => {
     });
   }, [days, filter, state.agendaEvents, state.reservations]);
 
-  /* ─── list view helpers ─── */
+  /* â”€â”€â”€ list view helpers â”€â”€â”€ */
   const range = useMemo(() => {
     if (view === "list") {
       const monthStart = dateStartOfMonth(focusDate);
@@ -142,9 +143,7 @@ const AgendaPage: React.FC = () => {
   }, [focusDate, view]);
 
   const visibleEvents = useMemo(() => {
-    const base = state.agendaEvents.filter(
-      (event) => filter === "all" || event.type === filter,
-    );
+    const base = enrichedDays.flatMap((day) => day.events);
     return base
       .filter((event) =>
         isWithinInterval(parseISO(`${event.date}T12:00:00`), {
@@ -153,7 +152,7 @@ const AgendaPage: React.FC = () => {
         }),
       )
       .sort((left, right) => `${left.date}${left.time}`.localeCompare(`${right.date}${right.time}`));
-  }, [filter, range.end, range.start, state.agendaEvents]);
+  }, [enrichedDays, range.end, range.start]);
 
   const grouped = useMemo(
     () =>
@@ -166,6 +165,13 @@ const AgendaPage: React.FC = () => {
   );
 
   const orderedDates = Object.keys(grouped).sort();
+  const selectedDate = parseISO(`${selectedDateKey}T12:00:00`);
+  const calendarEvents = enrichedDays.flatMap((day) => day.events);
+  const selectedDayEvents = calendarEvents.filter((event) => event.date === selectedDateKey);
+  const upcomingEvents = [...calendarEvents]
+    .filter((event) => `${event.date}${event.time}` >= `${format(new Date(), "yyyy-MM-dd")}0000`)
+    .sort((left, right) => `${left.date}${left.time}`.localeCompare(`${right.date}${right.time}`))
+    .slice(0, 5);
   const selectedIdRef = useState<string | null>(state.agendaEvents[0]?.id ?? null);
   const [selectedId, setSelectedId] = selectedIdRef;
   const [editorOpen, setEditorOpen] = useState(false);
@@ -185,7 +191,7 @@ const AgendaPage: React.FC = () => {
   const currentMonthLabel = format(focusDate, "MMMM 'de' yyyy", { locale: ptBR });
   const currentWeekLabel = `Semana de ${format(range.start, "dd 'de' MMM", { locale: ptBR })}`;
 
-  /* ─── handlers ─── */
+  /* â”€â”€â”€ handlers â”€â”€â”€ */
   const handleMoveDate = (direction: "prev" | "next") => {
     const factor = direction === "next" ? 1 : -1;
     setFocusDate((current) => {
@@ -235,7 +241,7 @@ const AgendaPage: React.FC = () => {
     setEditorOpen(false);
   };
 
-  /* ─── stats ─── */
+  /* â”€â”€â”€ stats â”€â”€â”€ */
   const monthEventCount = enrichedDays.reduce((sum, d) => sum + d.events.length, 0);
   const monthPickupCount = enrichedDays.reduce(
     (sum, d) => sum + d.events.filter((e) => e.type === "pickup").length,
@@ -246,9 +252,10 @@ const AgendaPage: React.FC = () => {
     0,
   );
 
-  const selected = state.agendaEvents.find((ev) => ev.id === selectedId) ?? null;
+  const selected = calendarEvents.find((ev) => ev.id === selectedId) ?? state.agendaEvents.find((ev) => ev.id === selectedId) ?? null;
+  const canEditSelectedStatus = Boolean(selected && state.agendaEvents.some((event) => event.id === selected.id));
 
-  /* ─── render ─── */
+  /* â”€â”€â”€ render â”€â”€â”€ */
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -256,10 +263,10 @@ const AgendaPage: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Agenda</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Controle de periodo com calendario visual e detalhe de evento.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Veja o mes inteiro, destaque o dia mais importante e acompanhe os proximos movimentos da operacao.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={() => setFocusDate(new Date())} className="rounded-xl gap-1.5">
+            <Button variant="outline" onClick={() => { const today = new Date(); setFocusDate(today); setSelectedDateKey(format(today, "yyyy-MM-dd")); }} className="rounded-xl gap-1.5">
               <RotateCcw className="h-3.5 w-3.5" /> Hoje
             </Button>
             <Button className="gradient-gold text-primary-foreground rounded-xl" onClick={openCreate}>
@@ -274,7 +281,7 @@ const AgendaPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3">
               {/* view switcher with layoutId */}
               <div className="flex items-center gap-1.5 p-1 bg-surface rounded-xl border border-border/50">
-                {([{ value: "calendar" as const, label: "Calendario" }, { value: "list" as const, label: "Lista" }]).map((item) => (
+                {([{ value: "calendar" as const, label: "Calendario" }, { value: "list" as const, label: "Linha do tempo" }]).map((item) => (
                   <button
                     key={item.value}
                     onClick={() => setView(item.value)}
@@ -347,89 +354,184 @@ const AgendaPage: React.FC = () => {
           ))}
         </motion.div>
 
-        {/* ─── CALENDAR VIEW ─── */}
+        {/* â”€â”€â”€ CALENDAR VIEW â”€â”€â”€ */}
         {view === "calendar" && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="glass-card p-4 sm:p-6 premium-shadow">
-            {/* Day-of-week header */}
-            <div className="grid grid-cols-7 gap-px mb-2">
-              {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((day) => (
-                <div key={day} className="text-center text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50 py-2">
-                  {day}
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_380px]">
+            <div className="glass-card p-4 sm:p-6 premium-shadow">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold">Calendario operacional</h2>
+                  <p className="text-sm text-muted-foreground">Clique em um dia para abrir um resumo rapido da operacao.</p>
                 </div>
-              ))}
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  {(["pickup", "return", "reservation"] as const).map((type) => (
+                    <span key={type} className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-surface/50 px-3 py-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: EVENT_COLORS[type] }} />
+                      {type === "pickup" ? "Retiradas" : type === "return" ? "Devolucoes" : "Reservas"}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-2 mb-2">
+                {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((day) => (
+                  <div key={day} className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70 py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-2">
+                <AnimatePresence>
+                  {enrichedDays.map((day, i) => {
+                    const dateKey = format(day.date, "yyyy-MM-dd");
+                    const isSelectedDay = dateKey === selectedDateKey;
+                    return (
+                      <motion.button
+                        key={dateKey}
+                        type="button"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.008, duration: 0.15 }}
+                        onClick={() => {
+                          setFocusDate(day.date);
+                          setSelectedDateKey(dateKey);
+                          if (day.events.length > 0) {
+                            setSelectedId(day.events[0].id);
+                          }
+                        }}
+                        className={`min-h-[108px] sm:min-h-[124px] rounded-2xl border transition-all cursor-pointer flex flex-col p-2 ${
+                          isSelectedDay
+                            ? "border-primary/40 bg-primary/10 shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
+                            : isToday(day.date)
+                              ? "border-primary/30 bg-primary/5"
+                              : day.isCurrentMonth
+                                ? "border-border/40 bg-background/60 hover:border-primary/30 hover:bg-surface/50"
+                                : "border-border/20 bg-muted/20 opacity-45 hover:opacity-100"
+                        }`}
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className={`text-xs sm:text-sm font-semibold ${isSelectedDay || isToday(day.date) ? "text-primary" : day.isCurrentMonth ? "text-foreground/80" : "text-muted-foreground/30"}`}>
+                            {format(day.date, "d")}
+                          </span>
+                          {day.events.length > 0 && (
+                            <span className="rounded-full bg-surface/80 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                              {day.events.length}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-1 flex-col gap-1 overflow-hidden">
+                          {day.events.slice(0, 3).map((ev) => (
+                            <div
+                              key={ev.id}
+                              className="rounded-lg px-2 py-1 text-[10px] font-medium leading-tight"
+                              style={{
+                                background: `${EVENT_COLORS[ev.type] || "hsl(43 85% 55%)"}18`,
+                                borderLeft: `3px solid ${EVENT_COLORS[ev.type] || "hsl(43 85% 55%)"}`,
+                                color: EVENT_COLORS[ev.type] || "hsl(43 85% 55%)",
+                              }}
+                            >
+                              <span className="line-clamp-2">{ev.type === "reservation" ? ev.clientName : ev.title || ev.clientName}</span>
+                            </div>
+                          ))}
+                          {day.events.length > 3 && (
+                            <div className="px-1 text-[10px] font-semibold text-muted-foreground">+{day.events.length - 3} itens</div>
+                          )}
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
             </div>
 
-            {/* Calendar grid */}
-            <div className="grid grid-cols-7 gap-px">
-              <AnimatePresence>
-                {enrichedDays.map((day, i) => (
-                  <motion.div
-                    key={format(day.date, "yyyy-MM-dd")}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.008, duration: 0.15 }}
-                    onClick={() => {
-                      setFocusDate(day.date);
-                      // show events for this day in the detail panel
-                      if (day.events.length > 0) {
-                        setSelectedId(day.events[0].id);
-                      }
-                    }}
-                    className={`min-h-[80px] sm:min-h-[96px] rounded-xl border transition-all cursor-pointer group relative flex flex-col p-1.5 sm:p-2 ${
-                      isToday(day.date)
-                        ? "border-primary/40 bg-primary/5"
-                        : day.isCurrentMonth
-                          ? "border-border/40 bg-background/60 hover:border-primary/30 hover:bg-surface/50"
-                          : "border-border/20 bg-muted/20 opacity-40 hover:opacity-100"
-                    }`}
-                  >
-                    {/* Date number */}
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-xs sm:text-sm font-semibold ${
-                        isToday(day.date) ? "text-primary" : day.isCurrentMonth ? "text-foreground/80" : "text-muted-foreground/30"
-                      }`}>
-                        {format(day.date, "d")}
-                      </span>
-                      {day.events.length > 0 && (
-                        <span className="text-[10px] text-muted-foreground/60 font-medium">
-                          {day.events.length}
-                        </span>
-                      )}
-                    </div>
+            <div className="space-y-6">
+              <div className="glass-card p-6 premium-shadow xl:sticky xl:top-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Dia selecionado</p>
+                    <h3 className="mt-2 text-xl font-semibold capitalize">{format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{selectedDayEvents.length ? `${selectedDayEvents.length} evento(s) previstos.` : "Nenhum evento neste dia."}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-surface/50 px-3 py-2 text-right">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Mes</p>
+                    <p className="text-lg font-semibold">{monthEventCount}</p>
+                  </div>
+                </div>
 
-                    {/* Event dots */}
-                    {day.events.length > 0 && (
-                      <div className="flex flex-col gap-0.5 flex-1 overflow-hidden">
-                        {day.events.slice(0, 3).map((ev) => (
-                          <div
-                            key={ev.id}
-                            className="h-[18px] rounded px-1 flex items-center gap-1 text-[10px] font-medium truncate"
-                            style={{
-                              background: `${EVENT_COLORS[ev.type] || "hsl(43 85% 55%)"}18`,
-                              borderLeft: `2px solid ${EVENT_COLORS[ev.type] || "hsl(43 85% 55%)"}`,
-                              color: EVENT_COLORS[ev.type] || "hsl(43 85% 55%)",
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedId(ev.id);
-                            }}
-                          >
-                            <span className="truncate">{ev.type === "pickup" ? "Ret" : ev.type === "return" ? "Dev" : ev.title}</span>
+                <div className="mt-6 space-y-3">
+                  {selectedDayEvents.length ? (
+                    selectedDayEvents.map((event, eventIndex) => (
+                      <motion.button
+                        key={event.id}
+                        type="button"
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: eventIndex * 0.04 }}
+                        onClick={() => setSelectedId(event.id)}
+                        className={`w-full rounded-2xl border p-4 text-left transition-all ${selectedId === event.id ? "border-primary/40 bg-primary/8" : "border-border/60 bg-surface/35 hover:border-primary/20 hover:bg-surface/55"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold">{event.title || event.clientName}</p>
+                            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{event.clientName}{event.equipment?.length ? ` • ${event.equipment.join(", ")}` : ""}</p>
                           </div>
-                        ))}
-                        {day.events.length > 3 && (
-                          <div className="text-[10px] text-muted-foreground font-semibold px-1">+{day.events.length - 3} mais</div>
-                        )}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold">{event.time}</p>
+                            <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: EVENT_COLORS[event.type] }} />
+                          </div>
+                        </div>
+                      </motion.button>
+                    ))
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-border/60 bg-surface/20 p-6 text-center">
+                      <CalendarDays className="mx-auto mb-3 h-8 w-8 text-muted-foreground/35" />
+                      <p className="text-sm font-medium">Dia livre</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Bom momento para encaixar reserva, manutencao ou retirada extra.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="glass-card p-6 premium-shadow">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Proximos movimentos</p>
+                    <h3 className="mt-2 text-lg font-semibold">O que vem a seguir</h3>
+                  </div>
+                  <Clock3 className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="space-y-3">
+                  {upcomingEvents.length ? (
+                    upcomingEvents.map((event) => (
+                      <button
+                        key={event.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDateKey(event.date);
+                          setSelectedId(event.id);
+                          setFocusDate(parseISO(`${event.date}T12:00:00`));
+                        }}
+                        className="flex w-full items-start gap-3 rounded-2xl border border-border/60 bg-surface/30 px-4 py-3 text-left transition-colors hover:border-primary/25 hover:bg-surface/55"
+                      >
+                        <span className="mt-1 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: EVENT_COLORS[event.type] }} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold">{event.title || event.clientName}</p>
+                          <p className="mt-1 text-xs text-muted-foreground capitalize">{format(parseISO(`${event.date}T12:00:00`), "EEE, dd MMM", { locale: ptBR })} às {event.time}</p>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Sem novos eventos futuros para esse filtro.</p>
+                  )}
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
 
-        {/* ─── LIST VIEW ─── */}
+        {/* â”€â”€â”€ LIST VIEW â”€â”€â”€ */}
         {view === "list" && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
             <div className="space-y-6">
@@ -486,7 +588,7 @@ const AgendaPage: React.FC = () => {
                                   <p className="text-xs text-muted-foreground truncate max-w-[180px]">
                                     {event.clientName}{" "}
                                     {event.equipment?.length > 0 && (
-                                      <span className="opacity-60">• {event.equipment.join(", ")}</span>
+                                      <span className="opacity-60">â€¢ {event.equipment.join(", ")}</span>
                                     )}
                                   </p>
                                 </div>
@@ -552,14 +654,21 @@ const AgendaPage: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <p className="text-sm font-medium">Status</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium">Status</p>
+                        {!canEditSelectedStatus && (
+                          <span className="text-[11px] text-muted-foreground">Atualize reservas direto na locacao.</span>
+                        )}
+                      </div>
                       <div className="grid grid-cols-3 gap-2">
                         {(["pending", "confirmed", "completed"] as const).map((status) => {
                           const active = selected.status === status;
                           return (
                             <button
                               key={status}
+                              disabled={!canEditSelectedStatus}
                               onClick={() => {
+                                if (!canEditSelectedStatus) return;
                                 upsertAgendaEvent({ ...selected, status });
                                 toast.success("Status atualizado.");
                               }}
@@ -569,7 +678,7 @@ const AgendaPage: React.FC = () => {
                                     ? "bg-primary/10 text-primary border border-primary/30"
                                     : "bg-muted/60 text-foreground border border-border/50"
                                   : "border border-border/50 bg-background text-muted-foreground hover:text-foreground"
-                              }`}
+                              } ${!canEditSelectedStatus ? "cursor-not-allowed opacity-55" : ""}`}
                             >
                               {status === "pending" ? "Pendente" : status === "confirmed" ? "Confirmado" : "Concluido"}
                             </button>
@@ -602,7 +711,7 @@ const AgendaPage: React.FC = () => {
           </motion.div>
         )}
 
-        {/* ─── Editor dialog ─── */}
+        {/* â”€â”€â”€ Editor dialog â”€â”€â”€ */}
         <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
           <DialogContent className="max-h-[92vh] max-w-6xl overflow-hidden p-0">
             <div className="grid max-h-[92vh] overflow-hidden xl:grid-cols-[0.9fr_1.5fr]">
@@ -696,3 +805,11 @@ const AgendaPage: React.FC = () => {
 };
 
 export default AgendaPage;
+
+
+
+
+
+
+
+
