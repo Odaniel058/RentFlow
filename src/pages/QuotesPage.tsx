@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useAuth } from "@/contexts/AuthContext";
 import { createShareToken } from "@/lib/shareTokens";
 import { toast } from "sonner";
+import { ClientHoverCard } from "@/components/ClientHoverCard";
 
 const statuses: Array<{ value: QuoteStatus | "all"; label: string }> = [
   { value: "all", label: "Todos" },
@@ -131,7 +132,7 @@ const QuotesPage: React.FC = () => {
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/12"><FileText className="h-5 w-5 text-primary" /></div>
                     <div>
                       <div className="flex items-center gap-2"><span className="text-sm font-mono text-muted-foreground">{quote.id}</span><StatusBadge status={quote.status} /></div>
-                      <p className="mt-1 text-sm font-medium">{quote.clientName}</p>
+                      <p className="mt-1 text-sm font-medium"><ClientHoverCard clientName={quote.clientName}>{quote.clientName}</ClientHoverCard></p>
                       <p className="text-xs text-muted-foreground">Locacao {formatDate(quote.rentalStartDate)} ate {formatDate(quote.rentalEndDate)}</p>
                       <p className="text-xs text-muted-foreground">Emitido em {formatDate(quote.createdAt)} • valido ate {formatDate(quote.validUntil)}</p>
                     </div>

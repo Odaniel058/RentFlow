@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import ClientEditorDialog from "@/components/clients/ClientEditorDialog";
+import { getAvatarGradient, getInitials } from "@/lib/avatar";
 
 const ClientsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -124,11 +125,12 @@ const ClientsPage: React.FC = () => {
                         <motion.div
                           animate={selectedId === client.id ? { scale: 1.08 } : { scale: 1 }}
                           transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-200 ${
-                            selectedId === client.id ? "bg-primary/20 ring-2 ring-primary/20" : "bg-primary/12"
+                          className={`flex h-11 w-11 items-center justify-center rounded-full flex-shrink-0 transition-all duration-200 ${
+                            selectedId === client.id ? "ring-2 ring-primary/30 ring-offset-1 ring-offset-background" : ""
                           }`}
+                          style={{ background: getAvatarGradient(client.contactName) }}
                         >
-                          <span className="text-sm font-semibold text-primary">{client.contactName.charAt(0)}</span>
+                          <span className="text-sm font-bold text-white drop-shadow-sm">{getInitials(client.contactName)}</span>
                         </motion.div>
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -174,8 +176,11 @@ const ClientsPage: React.FC = () => {
             {selected ? (
               <div className="space-y-5">
                 <div className="text-center">
-                  <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/12">
-                    <span className="text-xl font-semibold text-primary">{selected.contactName.charAt(0)}</span>
+                  <div
+                    className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full ring-4 ring-primary/10"
+                    style={{ background: getAvatarGradient(selected.contactName) }}
+                  >
+                    <span className="text-2xl font-bold text-white drop-shadow-sm">{getInitials(selected.contactName)}</span>
                   </div>
                   <h3 className="text-xl font-semibold">{selected.contactName}</h3>
                   <p className="text-sm text-muted-foreground">

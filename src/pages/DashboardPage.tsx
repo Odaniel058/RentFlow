@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, CartesianGrid, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, Area, AreaChart } from "recharts";
@@ -10,7 +11,10 @@ import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { getActivityLog } from "@/lib/activityLog";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { MagneticButton } from "@/components/MagneticButton";
 import { toast } from "sonner";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -23,7 +27,33 @@ const periodOptions = [{ value: "month", label: "Mes" }, { value: "quarter", lab
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { state, analytics } = useAppData();
+  const { user } = useAuth();
   const [period, setPeriod] = useState("month");
+
+  const recentActivity = useMemo(() => {
+    const log = getActivityLog(user?.tenantId ?? "");
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    const recent = new Set(log.filter(e => new Date(e.timestamp).getTime() > twoHoursAgo).map(e => e.entity));
+    return recent;
+  }, [user?.tenantId]);
+
+  // Confetti on first visit of the session (only if there's revenue)
+  useEffect(() => {
+    if (sessionStorage.getItem('rf-confetti-fired')) return;
+    if (analytics.kpis.monthlyRevenue <= 0) return;
+    const timer = setTimeout(() => {
+      confetti({
+        particleCount: 90,
+        spread: 75,
+        origin: { y: 0.25, x: 0.65 },
+        colors: ['#C8A234', '#E8C468', '#9A7420', '#FFD700', '#F5CC60'],
+        shapes: ['circle', 'square'],
+        scalar: 0.9,
+      });
+      sessionStorage.setItem('rf-confetti-fired', '1');
+    }, 1400);
+    return () => clearTimeout(timer);
+  }, [analytics.kpis.monthlyRevenue]);
 
   const todayStr = useMemo(() => {
     const now = new Date();
@@ -42,8 +72,14 @@ const DashboardPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div><h1 className="font-display text-2xl font-bold tracking-tight">Dashboard</h1><p className="text-sm text-muted-foreground mt-1">Visao geral da operacao em tempo real.</p></div>
           <div className="flex flex-wrap gap-2">
-            {[{ label: "Nova proposta", path: "/quotes/new" }, { label: "Clientes", path: "/clients" }, { label: "Reservas", path: "/reservations" }].map(({ label, path }) => <Button key={label} variant="outline" size="sm" className="rounded-xl text-xs gap-1.5" onClick={() => navigate(path)}><Plus className="h-3.5 w-3.5" />{label}</Button>)}
-            <Button size="sm" className="gradient-gold text-primary-foreground border-0 rounded-xl text-xs gap-1.5 gold-glow" onClick={() => navigate("/inventory")}><Plus className="h-3.5 w-3.5" />Novo equipamento</Button>
+            {[{ label: "Nova proposta", path: "/quotes/new" }, { label: "Clientes", path: "/clients" }, { label: "Reservas", path: "/reservations" }].map(({ label, path }) => (
+              <MagneticButton key={label} strength={20}>
+                <Button variant="outline" size="sm" className="rounded-xl text-xs gap-1.5" onClick={() => navigate(path)}><Plus className="h-3.5 w-3.5" />{label}</Button>
+              </MagneticButton>
+            ))}
+            <MagneticButton strength={25}>
+              <Button size="sm" className="gradient-gold text-primary-foreground border-0 rounded-xl text-xs gap-1.5 gold-glow" onClick={() => navigate("/inventory")}><Plus className="h-3.5 w-3.5" />Novo equipamento</Button>
+            </MagneticButton>
           </div>
         </div>
 
@@ -78,10 +114,10 @@ const DashboardPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <KPICard icon={DollarSign} title="Faturamento" value={formatCurrency(analytics.kpis.monthlyRevenue)} change="+12%" changeType="positive" subtitle="vs. mes ant." index={0} onClick={() => navigate("/finance")} />
+          <KPICard icon={DollarSign} title="Faturamento" value={formatCurrency(analytics.kpis.monthlyRevenue)} change="+12%" changeType="positive" subtitle="vs. mes ant." index={0} onClick={() => navigate("/finance")} hasRecentActivity={recentActivity.has("quote") || recentActivity.has("reservation")} />
           <KPICard icon={TrendingUp} title="Receita prevista" value={formatCurrency(analytics.kpis.projectedRevenue)} change="Projecao dinamica" changeType="neutral" index={1} onClick={() => navigate("/reports")} />
           <KPICard icon={CreditCard} title="Ticket medio" value={formatCurrency(analytics.kpis.averageTicket)} change="+5%" changeType="positive" subtitle="por reserva" index={2} onClick={() => navigate("/finance")} />
-          <KPICard icon={CalendarCheck} title="Reservas" value={String(analytics.kpis.approvedReservations)} change="+3" changeType="positive" subtitle="em aberto" index={3} onClick={() => navigate("/reservations")} />
+          <KPICard icon={CalendarCheck} title="Reservas" value={String(analytics.kpis.approvedReservations)} change="+3" changeType="positive" subtitle="em aberto" index={3} onClick={() => navigate("/reservations")} hasRecentActivity={recentActivity.has("reservation")} />
           <KPICard icon={AlertCircle} title="Em aberto" value={formatCurrency(analytics.kpis.outstandingAmount)} change="pendente" changeType="negative" index={4} onClick={() => navigate("/finance")} />
         </div>
 

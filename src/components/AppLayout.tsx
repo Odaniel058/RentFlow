@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Search } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppData } from "@/contexts/AppDataContext";
 import { AppSidebar } from "./AppSidebar";
@@ -9,6 +10,8 @@ import { NotificationsDropdown } from "./NotificationsDropdown";
 import { CommandPalette } from "./CommandPalette";
 import { Breadcrumb } from "./Breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -28,9 +31,56 @@ export const AppLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [directorMode, setDirectorMode] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const { isBootstrapping } = useAppData();
   const location = useLocation();
+  const konamiRef = useRef<string[]>([]);
+
+  // Spotlight effect: track mouse → CSS custom props
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      document.documentElement.style.setProperty('--spotlight-x', `${e.clientX}px`);
+      document.documentElement.style.setProperty('--spotlight-y', `${e.clientY}px`);
+    };
+    window.addEventListener('mousemove', handler, { passive: true });
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
+
+  // Konami Code easter egg
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      konamiRef.current = [...konamiRef.current, e.key].slice(-KONAMI.length);
+      if (konamiRef.current.join(',') === KONAMI.join(',')) {
+        konamiRef.current = [];
+        setDirectorMode(prev => {
+          const next = !prev;
+          document.documentElement.classList.toggle('director-mode', next);
+          toast(next ? '🎬 Modo Diretor ativado' : '🎬 Modo normal restaurado', {
+            description: next ? 'Pressione ESC ou ↑↑↓↓←→←→BA para sair' : undefined,
+            duration: 4000,
+          });
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // ESC exits director mode
+  useEffect(() => {
+    if (!directorMode) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setDirectorMode(false);
+        document.documentElement.classList.remove('director-mode');
+        toast('🎬 Modo normal restaurado', { duration: 2000 });
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [directorMode]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -56,14 +106,63 @@ export const AppLayout: React.FC = () => {
 
   if (isBootstrapping) {
     return (
-      <div className="min-h-screen bg-background p-6 md:p-8">
-        <div className="grid gap-6">
-          <Skeleton className="h-14 w-full rounded-2xl" />
-          <div className="grid gap-6 md:grid-cols-3">
-            <Skeleton className="h-64 rounded-2xl" />
-            <Skeleton className="h-64 rounded-2xl md:col-span-2" />
+      <div className="flex min-h-screen bg-background">
+        {/* Sidebar skeleton */}
+        <div className="hidden md:flex w-[260px] flex-col border-r border-border/40 p-4 gap-3 bg-sidebar-background">
+          <div className="flex items-center gap-3 h-16 border-b border-border/40 -mx-4 px-4 mb-2">
+            <Skeleton className="h-9 w-9 rounded-xl flex-shrink-0" />
+            <Skeleton className="h-4 w-24 rounded-lg" />
           </div>
-          <Skeleton className="h-80 rounded-2xl" />
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full rounded-xl" style={{ opacity: 1 - i * 0.08 }} />
+          ))}
+          <div className="mt-auto pt-4 border-t border-border/40 space-y-2">
+            <Skeleton className="h-10 w-full rounded-xl" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+          </div>
+        </div>
+
+        {/* Main content skeleton */}
+        <div className="flex-1 p-6 md:p-8 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-36 rounded-xl" />
+              <Skeleton className="h-4 w-56 rounded-lg" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-28 rounded-xl" />
+              <Skeleton className="h-8 w-28 rounded-xl" />
+              <Skeleton className="h-8 w-36 rounded-xl" />
+            </div>
+          </div>
+
+          {/* Today cards */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <Skeleton className="h-36 rounded-2xl" />
+            <Skeleton className="h-36 rounded-2xl" />
+          </div>
+
+          {/* KPI cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="glass-card p-5 space-y-3">
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-20 rounded" />
+                  <Skeleton className="h-8 w-8 rounded-xl" />
+                </div>
+                <Skeleton className="h-8 w-28 rounded-lg" />
+                <Skeleton className="h-3 w-16 rounded" />
+              </div>
+            ))}
+          </div>
+
+          {/* Charts */}
+          <div className="grid lg:grid-cols-3 gap-4">
+            <Skeleton className="lg:col-span-2 h-72 rounded-2xl" />
+            <Skeleton className="h-72 rounded-2xl" />
+          </div>
+          <Skeleton className="h-64 rounded-2xl" />
         </div>
       </div>
     );
@@ -126,6 +225,7 @@ export const AppLayout: React.FC = () => {
         </AnimatePresence>
       </main>
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
+      {directorMode && <div className="director-grain" />}
     </div>
   );
 };

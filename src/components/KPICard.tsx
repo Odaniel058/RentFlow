@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface KPICardProps {
@@ -12,6 +12,7 @@ interface KPICardProps {
   index?: number;
   onClick?: () => void;
   accentColor?: string;
+  hasRecentActivity?: boolean;
 }
 
 // Animated number counter
@@ -63,7 +64,26 @@ export const KPICard: React.FC<KPICardProps> = ({
   icon: Icon,
   index = 0,
   onClick,
+  hasRecentActivity = false,
 }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const mouseX = useMotionValue(0.5);
+  const mouseY = useMotionValue(0.5);
+  const rotateX = useSpring(useTransform(mouseY, [0, 1], [7, -7]), { stiffness: 300, damping: 30 });
+  const rotateY = useSpring(useTransform(mouseX, [0, 1], [-7, 7]), { stiffness: 300, damping: 30 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    mouseX.set((e.clientX - rect.left) / rect.width);
+    mouseY.set((e.clientY - rect.top) / rect.height);
+  };
+
+  const handleMouseLeave = () => {
+    mouseX.set(0.5);
+    mouseY.set(0.5);
+  };
+
   const changeIcon = changeType === 'positive'
     ? TrendingUp
     : changeType === 'negative'
@@ -80,6 +100,7 @@ export const KPICard: React.FC<KPICardProps> = ({
 
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, y: 24, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
@@ -87,13 +108,25 @@ export const KPICard: React.FC<KPICardProps> = ({
         duration: 0.5,
         ease: [0.16, 1, 0.3, 1],
       }}
-      whileHover={onClick ? { y: -4, scale: 1.01 } : {}}
       whileTap={onClick ? { scale: 0.98 } : {}}
+      style={{ rotateX, rotateY, transformPerspective: 800 }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className={`kpi-card glass-card p-5 premium-shadow group relative overflow-hidden ${
         onClick ? 'cursor-pointer' : ''
       }`}
       onClick={onClick}
     >
+      {/* Live activity pulse */}
+      {hasRecentActivity && (
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+        </div>
+      )}
+
       {/* Left accent bar */}
       <div
         className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full opacity-60 group-hover:opacity-100 transition-opacity duration-300"

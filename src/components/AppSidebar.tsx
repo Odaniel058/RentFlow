@@ -1,4 +1,4 @@
-﻿import React from "react";
+﻿import React, { useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,6 +60,42 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const { logout, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
+  const themeBtnRef = useRef<HTMLButtonElement>(null);
+
+  const handleThemeToggle = () => {
+    const btn = themeBtnRef.current;
+    if (!btn) { toggleTheme(); return; }
+
+    const rect = btn.getBoundingClientRect();
+    const originX = rect.left + rect.width / 2;
+    const originY = rect.top + rect.height / 2;
+    const maxR = Math.ceil(Math.hypot(
+      Math.max(originX, window.innerWidth - originX),
+      Math.max(originY, window.innerHeight - originY)
+    ));
+
+    const bgColor = theme === 'dark' ? 'hsl(0 0% 99%)' : 'hsl(224 14% 5%)';
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;inset:0;z-index:9999;pointer-events:none;background:${bgColor};clip-path:circle(0px at ${originX}px ${originY}px);will-change:clip-path;`;
+    document.body.appendChild(overlay);
+
+    // Force reflow then expand
+    overlay.getBoundingClientRect();
+    overlay.style.transition = 'clip-path 430ms cubic-bezier(0.4,0,0.6,1)';
+    overlay.style.clipPath = `circle(${maxR}px at ${originX}px ${originY}px)`;
+
+    // Toggle theme at peak
+    setTimeout(() => toggleTheme(), 420);
+
+    // Contract back
+    setTimeout(() => {
+      overlay.style.transition = 'clip-path 380ms cubic-bezier(0.4,0,0.6,1)';
+      overlay.style.clipPath = `circle(0px at ${originX}px ${originY}px)`;
+    }, 460);
+
+    // Remove overlay
+    setTimeout(() => overlay.remove(), 860);
+  };
 
   const sidebarContent = (
     <motion.aside
@@ -226,30 +262,66 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           )}
         </AnimatePresence>
 
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 h-10 text-sm rounded-xl hover:bg-sidebar-accent"
-          onClick={toggleTheme}
+        <button
+          ref={themeBtnRef}
+          onClick={handleThemeToggle}
+          className="w-full flex items-center gap-3 h-10 px-2.5 rounded-xl hover:bg-sidebar-accent transition-colors duration-200 text-sm font-medium text-sidebar-foreground"
         >
-          <motion.div whileTap={{ rotate: 180 }} transition={{ duration: 0.3 }}>
-            {theme === "dark"
-              ? <Sun className="h-[17px] w-[17px]" strokeWidth={1.75} />
-              : <Moon className="h-[17px] w-[17px]" strokeWidth={1.75} />
-            }
-          </motion.div>
+          {/* Day/Night pill */}
+          <div className={`theme-toggle-pill ${theme === 'dark' ? 'theme-pill--dark' : 'theme-pill--light'}`}>
+            {/* Stars (dark only) */}
+            {theme === 'dark' && (
+              <>
+                <span className="theme-star" style={{ width: 2.5, height: 2.5, top: 5, right: 8, opacity: 0.9 }} />
+                <span className="theme-star" style={{ width: 2, height: 2, top: 12, right: 13, opacity: 0.65 }} />
+                <span className="theme-star" style={{ width: 2, height: 2, top: 6, right: 18, opacity: 0.75 }} />
+              </>
+            )}
+            {/* Sliding thumb */}
+            <motion.div
+              className="theme-toggle-thumb"
+              animate={{ x: theme === 'dark' ? 2 : 22 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+            >
+              <AnimatePresence mode="wait">
+                {theme === 'dark' ? (
+                  <motion.div key="moon"
+                    initial={{ rotate: -40, scale: 0.4, opacity: 0 }}
+                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                    exit={{ rotate: 40, scale: 0.4, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <Moon className="h-2.5 w-2.5 text-sky-300" strokeWidth={2.5} />
+                  </motion.div>
+                ) : (
+                  <motion.div key="sun"
+                    initial={{ rotate: 90, scale: 0.4, opacity: 0 }}
+                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                    exit={{ rotate: -90, scale: 0.4, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <Sun className="h-2.5 w-2.5 text-amber-500" strokeWidth={2.5} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </div>
+
+          {/* Label */}
           <AnimatePresence initial={false}>
             {(!collapsed || isMobile) && (
               <motion.span
                 initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
+                animate={{ opacity: 1, width: 'auto' }}
                 exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2 }}
                 className="overflow-hidden whitespace-nowrap"
               >
-                {theme === "dark" ? "Modo claro" : "Modo escuro"}
+                {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
               </motion.span>
             )}
           </AnimatePresence>
-        </Button>
+        </button>
 
         <Button
           variant="ghost"

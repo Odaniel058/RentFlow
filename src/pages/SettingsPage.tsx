@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { dedupeCategoryOptions } from "@/lib/inventory";
 import { toast } from "sonner";
+import { getAvatarGradient } from "@/lib/avatar";
 
 // ─── Team Members ────────────────────────────────────────────────────────────
 
@@ -321,7 +322,7 @@ const SettingsPage: React.FC = () => {
           {/* Linha do usuario atual (admin logado) */}
           <div className="space-y-2">
             <div className="flex items-center gap-4 rounded-xl border border-border/60 bg-background/60 p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-gold text-primary-foreground text-sm font-bold">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold" style={{ background: getAvatarGradient(user?.name || "A") }}>
                 {initials(user?.name || "A")}
               </div>
               <div className="flex-1 min-w-0">
@@ -349,7 +350,7 @@ const SettingsPage: React.FC = () => {
 
             {team.map((member) => (
               <div key={member.id} className="flex items-center gap-4 rounded-xl border border-border/60 bg-background/60 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold" style={{ background: getAvatarGradient(member.name) }}>
                   {initials(member.name)}
                 </div>
                 <div className="flex-1 min-w-0">

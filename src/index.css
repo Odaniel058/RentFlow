@@ -415,6 +415,96 @@
   background: hsl(0 0% 100% / 0.08);
 }
 
+/* ─── Theme Toggle Pill ─── */
+.theme-toggle-pill {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1.5px solid transparent;
+  transition: background 0.45s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.45s;
+}
+.theme-pill--dark {
+  background: hsl(224 22% 9%);
+  border-color: hsl(224 12% 22%);
+}
+.theme-pill--light {
+  background: linear-gradient(120deg, hsl(43 95% 72%), hsl(35 98% 60%));
+  border-color: hsl(43 82% 56%);
+}
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.theme-pill--dark .theme-toggle-thumb {
+  background: hsl(220 22% 14%);
+  box-shadow: 0 0 8px hsl(217 91% 60% / 0.35), inset 0 1px 0 hsl(220 30% 22%);
+}
+.theme-pill--light .theme-toggle-thumb {
+  background: white;
+  box-shadow: 0 1px 6px hsl(0 0% 0% / 0.18), 0 0 14px hsl(43 90% 60% / 0.4);
+}
+.theme-star {
+  position: absolute;
+  border-radius: 9999px;
+  background: white;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─── Spotlight Effect (dark mode) ─── */
+.dark body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    700px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+    hsl(43 85% 55% / 0.05),
+    transparent 65%
+  );
+  transition: background 0.1s ease;
+}
+
+/* ─── Director Mode (Konami Easter Egg) ─── */
+.director-mode {
+  filter: saturate(0.12) contrast(1.08) brightness(0.96);
+  transition: filter 0.8s ease;
+}
+
+@keyframes film-grain {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-3px,  2px); }
+  40%  { transform: translate( 2px, -3px); }
+  60%  { transform: translate( 3px,  1px); }
+  80%  { transform: translate(-1px,  3px); }
+  100% { transform: translate( 1px, -1px); }
+}
+
+.director-grain {
+  position: fixed;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.055;
+  mix-blend-mode: overlay;
+  animation: film-grain 0.12s steps(1) infinite;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
 .dashboard-bar-fill {
   display: block;
   height: 100%;

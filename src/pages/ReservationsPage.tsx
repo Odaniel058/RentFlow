@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, CalendarDays, Check, CheckSquare, ListChecks, Search, Plus, Pencil, Ban, Eye, ArrowRight, Clock3, ReceiptText, Sparkles, Radio } from "lucide-react";
+import { AlertTriangle, CalendarDays, Check, CheckSquare, GanttChartSquare, LayoutGrid, ListChecks, Search, Plus, Pencil, Ban, Eye, ArrowRight, Clock3, ReceiptText, Sparkles, Radio } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ClientSearchSelect } from "@/components/clients/ClientSearchSelect";
@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { ClientHoverCard } from "@/components/ClientHoverCard";
 
 const statuses: Array<{ value: ReservationStatus | "all"; label: string }> = [
   { value: "all", label: "Todas" },
@@ -41,6 +42,7 @@ const ReservationsPage: React.FC = () => {
   const [form, setForm] = useState({ clientId: "", equipmentIds: [] as string[], pickupDate: "2026-03-20", returnDate: "2026-03-22", status: "quote" as ReservationStatus, notes: "" });
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<"cards" | "gantt">("cards");
 
   const filtered = state.reservations.filter((item) => {
     const searchValue = search.toLowerCase();
@@ -190,13 +192,19 @@ const ReservationsPage: React.FC = () => {
                 {statuses.map((item) => (
                   <motion.button key={item.value} type="button" whileTap={{ scale: 0.95 }} onClick={() => setStatusFilter(item.value as ReservationStatus | "all")} className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-200 ${statusFilter === item.value ? "border-primary/30 bg-primary text-primary-foreground shadow-sm shadow-primary/20" : "border-border/60 bg-surface/50 text-muted-foreground hover:border-primary/20 hover:text-foreground"}`}>{item.label}</motion.button>
                 ))}
-                <div className="ml-auto flex items-center gap-1 rounded-xl border border-border/50 bg-surface/40 p-1">
-                  {[{ value: "all", label: "Todos" }, { value: "today", label: "Hoje" }, { value: "week", label: "7 dias" }].map((item) => (
-                    <motion.button key={item.value} type="button" whileTap={{ scale: 0.95 }} onClick={() => setPeriod(item.value)} className={`relative rounded-lg px-3 py-1 text-xs font-medium transition-colors ${period === item.value ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                      {period === item.value && <motion.div layoutId="period-pill-res" className="absolute inset-0 gradient-gold rounded-lg" transition={{ type: "spring", stiffness: 400, damping: 30 }} />}
-                      <span className="relative z-10">{item.label}</span>
-                    </motion.button>
-                  ))}
+                <div className="ml-auto flex items-center gap-2">
+                  <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-surface/40 p-1">
+                    {[{ value: "all", label: "Todos" }, { value: "today", label: "Hoje" }, { value: "week", label: "7 dias" }].map((item) => (
+                      <motion.button key={item.value} type="button" whileTap={{ scale: 0.95 }} onClick={() => setPeriod(item.value)} className={`relative rounded-lg px-3 py-1 text-xs font-medium transition-colors ${period === item.value ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                        {period === item.value && <motion.div layoutId="period-pill-res" className="absolute inset-0 gradient-gold rounded-lg" transition={{ type: "spring", stiffness: 400, damping: 30 }} />}
+                        <span className="relative z-10">{item.label}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-surface/40 p-1">
+                    <button type="button" onClick={() => setViewMode("cards")} title="Cards" className={`rounded-lg p-1.5 transition-colors ${viewMode === "cards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}><LayoutGrid className="h-3.5 w-3.5" /></button>
+                    <button type="button" onClick={() => setViewMode("gantt")} title="Timeline" className={`rounded-lg p-1.5 transition-colors ${viewMode === "gantt" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}><GanttChartSquare className="h-3.5 w-3.5" /></button>
+                  </div>
                 </div>
               </div>
               {selectMode && (
@@ -210,7 +218,71 @@ const ReservationsPage: React.FC = () => {
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            {viewMode === "gantt" && (() => {
+              const allDates = filtered.flatMap(r => [r.pickupDate, r.returnDate]).sort();
+              const minDate = new Date(allDates[0] ?? new Date().toISOString().slice(0,10));
+              const maxDate = new Date(allDates[allDates.length - 1] ?? new Date().toISOString().slice(0,10));
+              maxDate.setDate(maxDate.getDate() + 1);
+              const totalDays = Math.max(1, (maxDate.getTime() - minDate.getTime()) / 86400000);
+              const statusColors: Record<string, string> = { approved: "hsl(43 85% 55%)", in_progress: "hsl(142 65% 42%)", quote: "hsl(217 91% 60%)", completed: "hsl(220 8% 55%)", cancelled: "hsl(0 72% 51%)" };
+              return (
+                <div className="overflow-x-auto">
+                  <div className="min-w-[640px] space-y-2">
+                    {/* Header ruler */}
+                    <div className="flex ml-[140px] mb-1">
+                      {Array.from({ length: Math.ceil(totalDays) }).map((_, i) => {
+                        const d = new Date(minDate); d.setDate(d.getDate() + i);
+                        const show = i === 0 || d.getDate() === 1 || i % Math.ceil(totalDays / 8) === 0;
+                        return show ? (
+                          <div key={i} className="text-[10px] text-muted-foreground" style={{ width: `${100 / totalDays}%`, flexShrink: 0 }}>
+                            {d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                    {/* Today line */}
+                    {(() => {
+                      const todayPct = ((new Date().getTime() - minDate.getTime()) / 86400000 / totalDays) * 100;
+                      return todayPct >= 0 && todayPct <= 100 ? (
+                        <div className="relative pointer-events-none" style={{ marginLeft: 140 }}>
+                          <div className="absolute top-0 bottom-0 w-px bg-primary/60 z-10" style={{ left: `${todayPct}%`, top: "-4px", height: "calc(100% + 4px)" }} />
+                        </div>
+                      ) : null;
+                    })()}
+                    {filtered.map((r) => {
+                      const start = (new Date(r.pickupDate).getTime() - minDate.getTime()) / 86400000;
+                      const end = (new Date(r.returnDate).getTime() - minDate.getTime()) / 86400000 + 1;
+                      const left = (start / totalDays) * 100;
+                      const width = Math.max(0.5, ((end - start) / totalDays) * 100);
+                      const color = statusColors[r.status] ?? "hsl(43 85% 55%)";
+                      return (
+                        <motion.div key={r.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 group cursor-pointer" onClick={() => setSelectedId(r.id)}>
+                          <div className="w-[140px] flex-shrink-0 text-right pr-3">
+                            <p className="text-xs font-medium truncate">{r.clientName}</p>
+                            <p className="text-[10px] text-muted-foreground">{r.id}</p>
+                          </div>
+                          <div className="flex-1 relative h-9 bg-surface rounded-lg overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${width}%` }}
+                              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                              className="absolute top-1 bottom-1 rounded-md flex items-center px-2 overflow-hidden"
+                              style={{ left: `${left}%`, background: color, opacity: selectedId === r.id ? 1 : 0.82 }}
+                              title={`${r.clientName} · ${r.pickupDate} → ${r.returnDate}`}
+                            >
+                              <span className="text-[10px] font-semibold text-white whitespace-nowrap truncate drop-shadow-sm">{r.equipment.slice(0,2).join(", ")}{r.equipment.length > 2 ? ` +${r.equipment.length-2}` : ""}</span>
+                            </motion.div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                    {filtered.length === 0 && <div className="text-center py-10 text-sm text-muted-foreground">Nenhuma reserva para exibir na timeline.</div>}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {viewMode === "cards" && <div className="grid gap-4 md:grid-cols-2">
               <AnimatePresence initial={false}>
               {filtered.map((reservation) => (
                 <motion.button key={reservation.id} type="button" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.15 }} onClick={() => selectMode ? toggleSelect(reservation.id) : setSelectedId(reservation.id)} className={`group relative rounded-[24px] border p-5 text-left transition-all duration-300 ${selectMode && selectedIds.has(reservation.id) ? "border-primary/50 bg-primary/8 premium-shadow-lg ring-2 ring-primary/20" : selectedId === reservation.id && !selectMode ? "border-primary/30 bg-primary/6 premium-shadow-lg" : "border-border/60 bg-card premium-shadow hover:-translate-y-1 hover:border-primary/20 hover:premium-shadow-lg"}`}>
@@ -219,7 +291,7 @@ const ReservationsPage: React.FC = () => {
                       {selectedIds.has(reservation.id) && <Check className="h-3 w-3 text-primary-foreground" />}
                     </div>
                   )}
-                  <div className="mb-4 flex items-start justify-between gap-4"><div><p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{reservation.id}</p><h3 className="mt-2 text-lg font-semibold">{reservation.clientName}</h3></div>{!selectMode && <StatusBadge status={reservation.status} />}{selectMode && <StatusBadge status={reservation.status} />}</div>
+                  <div className="mb-4 flex items-start justify-between gap-4"><div><p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{reservation.id}</p><h3 className="mt-2 text-lg font-semibold"><ClientHoverCard clientName={reservation.clientName} clientId={reservation.clientId}>{reservation.clientName}</ClientHoverCard></h3></div>{!selectMode && <StatusBadge status={reservation.status} />}{selectMode && <StatusBadge status={reservation.status} />}</div>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between gap-3"><span>Periodo</span><span className="font-medium text-foreground">{formatDate(reservation.pickupDate)} → {formatDate(reservation.returnDate)}</span></div>
                     <div className="flex items-center justify-between gap-3"><span>Itens</span><span className="font-medium text-foreground">{reservation.equipment.length}</span></div>
@@ -234,9 +306,9 @@ const ReservationsPage: React.FC = () => {
                 </motion.button>
               ))}
               </AnimatePresence>
-            </div>
+            </div>}
 
-            {filtered.length === 0 && <div className="glass-card p-14 premium-shadow text-center text-muted-foreground"><CalendarDays className="mx-auto mb-3 h-10 w-10 opacity-40" /><p className="text-sm font-medium">Nenhuma reserva encontrada</p><p className="mt-1 text-xs">Crie uma nova proposta no composer ou ajuste os filtros.</p></div>}
+            {viewMode === "cards" && filtered.length === 0 && <div className="glass-card p-14 premium-shadow text-center text-muted-foreground"><CalendarDays className="mx-auto mb-3 h-10 w-10 opacity-40" /><p className="text-sm font-medium">Nenhuma reserva encontrada</p><p className="mt-1 text-xs">Crie uma nova proposta no composer ou ajuste os filtros.</p></div>}
           </div>
 
           <div className="space-y-6">
