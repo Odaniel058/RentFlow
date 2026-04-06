@@ -7,6 +7,7 @@ import {
   CalendarRange,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   Clock3,
   Plus,
   RotateCcw,
@@ -44,7 +45,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ModalAsideCard, ModalHero, ModalSection } from "@/components/ui/modal-shell";
 import { toast } from "sonner";
 
-/* â”€â”€â”€ helpers â”€â”€â”€ */
+/* â"€â"€â"€ helpers â"€â"€â"€ */
 const EVENT_COLORS: Record<string, string> = {
   pickup: "hsl(217 91% 60%)",
   return: "hsl(142 71% 45%)",
@@ -67,7 +68,7 @@ const AgendaPage: React.FC = () => {
   const [focusDate, setFocusDate] = useState(new Date());
   const [selectedDateKey, setSelectedDateKey] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  /* â”€â”€â”€ calendar grid â”€â”€â”€ */
+  /* â"€â"€â"€ calendar grid â"€â"€â"€ */
   const calendarStart = useMemo(() => {
     const start = dateStartOfMonth(focusDate);
     return dateStartOfWeek(start, { weekStartsOn: 0 });
@@ -132,7 +133,7 @@ const AgendaPage: React.FC = () => {
     });
   }, [days, filter, state.agendaEvents, state.reservations]);
 
-  /* â”€â”€â”€ list view helpers â”€â”€â”€ */
+  /* â"€â"€â"€ list view helpers â"€â"€â"€ */
   const range = useMemo(() => {
     if (view === "list") {
       const monthStart = dateStartOfMonth(focusDate);
@@ -176,6 +177,8 @@ const AgendaPage: React.FC = () => {
   const [selectedId, setSelectedId] = selectedIdRef;
   const [editorOpen, setEditorOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [form, setForm] = useState({
     type: "pickup" as AgendaEventType,
     reservationId: "",
@@ -191,7 +194,7 @@ const AgendaPage: React.FC = () => {
   const currentMonthLabel = format(focusDate, "MMMM 'de' yyyy", { locale: ptBR });
   const currentWeekLabel = `Semana de ${format(range.start, "dd 'de' MMM", { locale: ptBR })}`;
 
-  /* â”€â”€â”€ handlers â”€â”€â”€ */
+  /* â"€â"€â"€ handlers â"€â"€â"€ */
   const handleMoveDate = (direction: "prev" | "next") => {
     const factor = direction === "next" ? 1 : -1;
     setFocusDate((current) => {
@@ -241,7 +244,7 @@ const AgendaPage: React.FC = () => {
     setEditorOpen(false);
   };
 
-  /* â”€â”€â”€ stats â”€â”€â”€ */
+  /* â"€â"€â"€ stats â"€â"€â"€ */
   const monthEventCount = enrichedDays.reduce((sum, d) => sum + d.events.length, 0);
   const monthPickupCount = enrichedDays.reduce(
     (sum, d) => sum + d.events.filter((e) => e.type === "pickup").length,
@@ -255,7 +258,7 @@ const AgendaPage: React.FC = () => {
   const selected = calendarEvents.find((ev) => ev.id === selectedId) ?? state.agendaEvents.find((ev) => ev.id === selectedId) ?? null;
   const canEditSelectedStatus = Boolean(selected && state.agendaEvents.some((event) => event.id === selected.id));
 
-  /* â”€â”€â”€ render â”€â”€â”€ */
+  /* â"€â"€â"€ render â"€â"€â"€ */
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -354,7 +357,7 @@ const AgendaPage: React.FC = () => {
           ))}
         </motion.div>
 
-        {/* â”€â”€â”€ CALENDAR VIEW â”€â”€â”€ */}
+        {/* â"€â"€â"€ CALENDAR VIEW â"€â"€â"€ */}
         {view === "calendar" && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_380px]">
             <div className="glass-card p-4 sm:p-6 premium-shadow">
@@ -531,7 +534,7 @@ const AgendaPage: React.FC = () => {
           </motion.div>
         )}
 
-        {/* â”€â”€â”€ LIST VIEW â”€â”€â”€ */}
+        {/* â"€â"€â"€ LIST VIEW â"€â"€â"€ */}
         {view === "list" && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
             <div className="space-y-6">
@@ -693,6 +696,16 @@ const AgendaPage: React.FC = () => {
                         <p className="text-sm text-muted-foreground">{selected.notes}</p>
                       </div>
                     )}
+
+                    {selected.type === "pickup" && selected.equipment.length > 0 && (
+                      <Button
+                        className="w-full gradient-gold text-primary-foreground border-0 gap-2"
+                        onClick={() => { setCheckedItems(new Set()); setChecklistOpen(true); }}
+                      >
+                        <ClipboardCheck className="h-4 w-4" />
+                        Checklist de Saída
+                      </Button>
+                    )}
                   </motion.div>
                 ) : (
                   <motion.div
@@ -711,7 +724,89 @@ const AgendaPage: React.FC = () => {
           </motion.div>
         )}
 
-        {/* â”€â”€â”€ Editor dialog â”€â”€â”€ */}
+        {/* ─── Checklist de Saída ─── */}
+        <Dialog open={checklistOpen} onOpenChange={(open) => { setChecklistOpen(open); if (!open) setCheckedItems(new Set()); }}>
+          <DialogContent className="max-w-md">
+            <div className="space-y-5">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground mb-1">Checklist de Saída</p>
+                <h3 className="font-display text-xl font-bold">{selected?.clientName}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">{selected?.equipment.length} item(ns) para conferir</p>
+              </div>
+
+              {/* Progress bar */}
+              <div className="h-1.5 rounded-full bg-surface overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full gradient-gold"
+                  animate={{ width: selected ? `${(checkedItems.size / selected.equipment.length) * 100}%` : "0%" }}
+                  transition={{ type: "spring", stiffness: 120, damping: 20 }}
+                />
+              </div>
+
+              {/* Items */}
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {selected?.equipment.map((item, i) => {
+                  const checked = checkedItems.has(item);
+                  return (
+                    <motion.button
+                      key={item}
+                      type="button"
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      onClick={() => setCheckedItems(prev => {
+                        const next = new Set(prev);
+                        if (next.has(item)) next.delete(item); else next.add(item);
+                        return next;
+                      })}
+                      className={`w-full flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all duration-200 ${checked ? "border-success/30 bg-success/8" : "border-border/60 bg-surface/40 hover:border-primary/20"}`}
+                    >
+                      <motion.div
+                        className={`h-5 w-5 flex-shrink-0 rounded-md border-2 flex items-center justify-center transition-colors duration-200 ${checked ? "bg-success border-success" : "border-border"}`}
+                        animate={checked ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+                        transition={{ duration: 0.25 }}
+                      >
+                        {checked && (
+                          <motion.svg viewBox="0 0 10 8" className="w-3 h-3" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <motion.path d="M1 4l2.5 3L9 1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.25 }} />
+                          </motion.svg>
+                        )}
+                      </motion.div>
+                      <span className={`text-sm font-medium transition-colors ${checked ? "line-through text-muted-foreground" : ""}`}>{item}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              {/* Confirm button */}
+              <AnimatePresence>
+                {selected && checkedItems.size === selected.equipment.length && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                  >
+                    <Button
+                      className="w-full gradient-gold text-primary-foreground border-0 gap-2 gold-glow"
+                      onClick={() => {
+                        upsertAgendaEvent({ ...selected, status: "completed" });
+                        toast.success(`Saida confirmada — ${selected.equipment.length} item(ns) conferidos.`);
+                        setChecklistOpen(false);
+                        setCheckedItems(new Set());
+                      }}
+                    >
+                      <ClipboardCheck className="h-4 w-4" />
+                      Confirmar Saida ({checkedItems.size}/{selected.equipment.length})
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ─── Editor dialog ─── */}
         <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
           <DialogContent className="max-h-[92vh] max-w-6xl overflow-hidden p-0">
             <div className="grid max-h-[92vh] overflow-hidden xl:grid-cols-[0.9fr_1.5fr]">
