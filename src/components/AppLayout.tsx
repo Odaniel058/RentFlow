@@ -7,6 +7,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { AppSidebar } from "./AppSidebar";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { CommandPalette } from "./CommandPalette";
+import { Breadcrumb } from "./Breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -81,7 +82,10 @@ export const AppLayout: React.FC = () => {
         {/* Top bar */}
         <div className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border/40 bg-background/90 px-4 backdrop-blur-md sm:px-5 lg:px-8 after:absolute after:inset-x-8 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-border/80 after:to-transparent after:pointer-events-none relative">
           <div className="flex items-center gap-3 min-w-0">
-            <p className="truncate pl-10 font-display text-base font-semibold tracking-tight md:pl-0">{pageTitle}</p>
+            <p className="hidden md:block truncate font-display text-base font-semibold tracking-tight">{pageTitle}</p>
+            <div className="md:pl-0 pl-10">
+              <Breadcrumb />
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <button

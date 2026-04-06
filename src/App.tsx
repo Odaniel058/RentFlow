@@ -7,6 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AppDataProvider } from "@/contexts/AppDataContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppLayout } from "@/components/AppLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
+import { BackToTop } from "@/components/BackToTop";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -23,6 +26,8 @@ import FinancialPage from "./pages/FinancialPage";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
 import PublicQuotePage from "./pages/PublicQuotePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfUsePage from "./pages/TermsOfUsePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,20 +38,23 @@ const App = () => (
       <AuthProvider>
         <AppDataProvider>
           <TooltipProvider>
-            <Toaster />
-            <Sonner
-              position="bottom-right"
-              toastOptions={{
-                classNames: {
-                  toast: "!bg-card/95 !border-border/60 !backdrop-blur-xl !shadow-[0_0_0_1px_hsl(var(--border)/0.5),0_12px_40px_-8px_hsl(0_0%_0%/0.25)] !rounded-2xl",
-                  title: "!font-semibold !text-foreground !text-sm",
-                  description: "!text-muted-foreground !text-xs",
-                  actionButton: "!bg-primary !text-primary-foreground",
-                  cancelButton: "!bg-muted !text-muted-foreground",
-                },
-              }}
-            />
-            <HashRouter>
+            <ErrorBoundary>
+              <Toaster />
+              <Sonner
+                position="bottom-right"
+                toastOptions={{
+                  classNames: {
+                    toast: "!bg-card/95 !border-border/60 !backdrop-blur-xl !shadow-[0_0_0_1px_hsl(var(--border)/0.5),0_12px_40px_-8px_hsl(0_0%_0%/0.25)] !rounded-2xl",
+                    title: "!font-semibold !text-foreground !text-sm",
+                    description: "!text-muted-foreground !text-xs",
+                    actionButton: "!bg-primary !text-primary-foreground",
+                    cancelButton: "!bg-muted !text-muted-foreground",
+                  },
+                }}
+              />
+              <CookieConsentBanner />
+              <BackToTop />
+              <HashRouter>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/features" element={<LandingPage />} />
@@ -60,6 +68,8 @@ const App = () => (
                 <Route path="/signup" element={<SignupPage />} />
                 <Route path="/cadastro" element={<SignupPage />} />
                 <Route path="/proposta/:token" element={<PublicQuotePage />} />
+                <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                <Route path="/terms" element={<TermsOfUsePage />} />
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/inventory" element={<InventoryPage />} />
@@ -94,6 +104,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </HashRouter>
+            </ErrorBoundary>
           </TooltipProvider>
         </AppDataProvider>
       </AuthProvider>

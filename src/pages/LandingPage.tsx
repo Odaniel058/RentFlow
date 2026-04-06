@@ -30,10 +30,12 @@ import {
   Users,
   X,
   Zap,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { BackToTop } from "@/components/BackToTop";
 
 const features = [
   {
@@ -1086,17 +1088,70 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      <footer className="border-t border-border/50 py-8 bg-surface/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg gradient-gold flex items-center justify-center">
-              <Film className="h-3.5 w-3.5 text-primary-foreground" />
+      <footer className="border-t border-border/50 bg-surface/70">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+            {/* Brand */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 rounded-xl gradient-gold flex items-center justify-center">
+                  <Film className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <span className="font-display font-bold text-lg tracking-tight">RentFlow</span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+                Sistema de gestao profissional para locadoras de equipamentos audiovisuais.
+              </p>
             </div>
-            <span className="text-sm font-semibold">RentFlow</span>
+
+            {/* Product */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Produto</h4>
+              <ul className="space-y-2.5">
+                <li><a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</a></li>
+                <li><a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Precos</a></li>
+                <li><a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Como funciona</a></li>
+                <li><a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</a></li>
+              </ul>
+            </div>
+
+            {/* Company */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Empresa</h4>
+              <ul className="space-y-2.5">
+                <li><Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Politica de Privacidade</Link></li>
+                <li><Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Termos de Uso</Link></li>
+                <li><a href="mailto:contato@rentflow.app" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contato</a></li>
+              </ul>
+            </div>
+
+            {/* CTA */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Comece agora</h4>
+              <p className="text-sm text-muted-foreground mb-4">14 dias gratis, sem cartao de credito.</p>
+              <Link to="/signup">
+                <Button size="sm" className="rounded-xl gradient-gold text-primary-foreground hover:opacity-90 w-full">
+                  Criar conta gratis
+                  <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">(c) 2026 RentFlow. Todos os direitos reservados.</p>
+
+          <div className="pt-6 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">(c) 2026 RentFlow. Todos os direitos reservados.</p>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacidade</Link>
+              <span className="text-border/40">|</span>
+              <Link to="/terms" className="hover:text-foreground transition-colors">Termos</Link>
+              <span className="text-border/40">|</span>
+              <a href="mailto:contato@rentflow.app" className="hover:text-foreground transition-colors">Email</a>
+            </div>
+          </div>
         </div>
       </footer>
+
+      <BackToTop />
     </div>
   );
 };

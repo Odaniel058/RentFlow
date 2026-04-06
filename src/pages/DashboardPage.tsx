@@ -6,6 +6,7 @@ import { AlertCircle, ArrowDownLeft, ArrowRight, ArrowUpRight, CalendarCheck, Cl
 import { PageTransition } from "@/components/PageTransition";
 import { KPICard } from "@/components/KPICard";
 import { StatusBadge } from "@/components/StatusBadge";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { useAppData } from "@/contexts/AppDataContext";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -24,8 +25,13 @@ const DashboardPage: React.FC = () => {
   const { state, analytics } = useAppData();
   const [period, setPeriod] = useState("month");
 
-  const todayPickups = state.agendaEvents.filter((event) => event.date === "2026-03-16" && event.type === "pickup");
-  const todayReturns = state.agendaEvents.filter((event) => event.date === "2026-03-16" && event.type === "return");
+  const todayStr = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  }, []);
+
+  const todayPickups = state.agendaEvents.filter((event) => event.date === todayStr && event.type === "pickup");
+  const todayReturns = state.agendaEvents.filter((event) => event.date === todayStr && event.type === "return");
   const upcomingRes = state.reservations.filter((reservation) => reservation.status === "approved").slice(0, 4);
   const maintenanceEq = state.equipment.filter((equipment) => equipment.status === "maintenance");
   const chartData = useMemo(() => period === "quarter" ? analytics.monthlyRevenue.slice(-3) : period === "year" ? analytics.monthlyRevenue : analytics.monthlyRevenue.slice(-6), [analytics.monthlyRevenue, period]);

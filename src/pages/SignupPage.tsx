@@ -197,9 +197,9 @@ const SignupPage: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [stage]);
 
-  if (isAuthenticated && stage === "form") return <Navigate to="/dashboard" replace />;
-
   const passwordStrength = useMemo(() => getPasswordStrength(form.password), [form.password]);
+
+  if (isAuthenticated && stage === "form") return <Navigate to="/dashboard" replace />;
 
   const updateField = <K extends keyof SignupForm>(key: K, value: SignupForm[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
