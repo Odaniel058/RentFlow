@@ -29,6 +29,8 @@ export const AppLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const { isAuthenticated, user } = useAuth();
+  const { isBootstrapping } = useAppData();
+  const location = useLocation();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -44,8 +46,6 @@ export const AppLayout: React.FC = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [location.pathname]);
-  const { isBootstrapping } = useAppData();
-  const location = useLocation();
 
   const pageTitle =
     PAGE_TITLES[location.pathname] ??
@@ -59,7 +59,7 @@ export const AppLayout: React.FC = () => {
       <div className="min-h-screen bg-background p-6 md:p-8">
         <div className="grid gap-6">
           <Skeleton className="h-14 w-full rounded-2xl" />
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid gap-6 md:grid-cols-3">
             <Skeleton className="h-64 rounded-2xl" />
             <Skeleton className="h-64 rounded-2xl md:col-span-2" />
           </div>
@@ -79,35 +79,34 @@ export const AppLayout: React.FC = () => {
         onCloseMobile={() => setMobileOpen(false)}
       />
       <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
-        {/* Top bar */}
-        <div className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border/40 bg-background/90 px-4 backdrop-blur-md sm:px-5 lg:px-8 after:absolute after:inset-x-8 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-border/80 after:to-transparent after:pointer-events-none relative">
-          <div className="flex items-center gap-3 min-w-0">
-            <p className="hidden md:block truncate font-display text-base font-semibold tracking-tight">{pageTitle}</p>
-            <div className="md:pl-0 pl-10">
+        <div className="relative sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border/40 bg-background/90 px-4 backdrop-blur-md after:pointer-events-none after:absolute after:inset-x-8 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-border/80 after:to-transparent sm:px-5 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <p className="hidden truncate font-display text-base font-semibold tracking-tight md:block">{pageTitle}</p>
+            <div className="pl-10 md:pl-0">
               <Breadcrumb />
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <button
               onClick={() => setCmdOpen(true)}
-              className="hidden md:flex items-center gap-2 rounded-xl border border-border/60 bg-surface/60 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-surface transition-all duration-200"
+              className="hidden items-center gap-2 rounded-xl border border-border/60 bg-surface/60 px-3 py-1.5 text-xs text-muted-foreground transition-all duration-200 hover:border-primary/30 hover:bg-surface hover:text-foreground md:flex"
             >
               <Search className="h-3.5 w-3.5" />
               <span>Buscar...</span>
-              <kbd className="ml-2 border border-border/60 rounded-lg px-1.5 py-0.5 font-mono text-[10px] bg-muted/60 text-muted-foreground/80">⌃K</kbd>
+              <kbd className="ml-2 rounded-lg border border-border/60 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/80">Ctrl K</kbd>
             </button>
             <NotificationsDropdown />
-            <div className="hidden md:flex items-center gap-2.5 rounded-xl border border-border/60 bg-surface/60 px-3 py-1.5 hover:border-border transition-colors duration-200">
+            <div className="hidden items-center gap-2.5 rounded-xl border border-border/60 bg-surface/60 px-3 py-1.5 transition-colors duration-200 hover:border-border md:flex">
               <motion.div
                 whileHover={{ scale: 1.08 }}
                 transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="flex h-7 w-7 items-center justify-center rounded-full gradient-gold text-[11px] font-bold text-primary-foreground flex-shrink-0"
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full gradient-gold text-[11px] font-bold text-primary-foreground"
               >
                 {user?.name?.charAt(0).toUpperCase() ?? "U"}
               </motion.div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold leading-tight truncate">{user?.name}</span>
-                <span className="text-[10px] text-muted-foreground leading-tight truncate">{user?.company}</span>
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-xs font-semibold leading-tight">{user?.name}</span>
+                <span className="truncate text-[10px] leading-tight text-muted-foreground">{user?.company}</span>
               </div>
             </div>
           </div>
