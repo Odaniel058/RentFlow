@@ -68,6 +68,15 @@ const defaultUsers: RegisteredUser[] = [
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const safeParse = <T,>(value: string | null, fallback: T): T => {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+};
+
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
@@ -77,14 +86,14 @@ export const useAuth = () => {
 const getStoredTenants = () => {
   const stored = localStorage.getItem(TENANTS_KEY);
   if (stored) {
-    return JSON.parse(stored) as TenantWorkspace[];
+    return safeParse<TenantWorkspace[]>(stored, [defaultTenant]);
   }
 
   const legacy = localStorage.getItem(LEGACY_TENANTS_KEY);
   if (legacy) {
     localStorage.setItem(TENANTS_KEY, legacy);
     localStorage.removeItem(LEGACY_TENANTS_KEY);
-    return JSON.parse(legacy) as TenantWorkspace[];
+    return safeParse<TenantWorkspace[]>(legacy, [defaultTenant]);
   }
 
   localStorage.setItem(TENANTS_KEY, JSON.stringify([defaultTenant]));
@@ -94,14 +103,14 @@ const getStoredTenants = () => {
 const getStoredUsers = () => {
   const stored = localStorage.getItem(USERS_KEY);
   if (stored) {
-    return JSON.parse(stored) as RegisteredUser[];
+    return safeParse<RegisteredUser[]>(stored, defaultUsers);
   }
 
   const legacy = localStorage.getItem(LEGACY_USERS_KEY);
   if (legacy) {
     localStorage.setItem(USERS_KEY, legacy);
     localStorage.removeItem(LEGACY_USERS_KEY);
-    return JSON.parse(legacy) as RegisteredUser[];
+    return safeParse<RegisteredUser[]>(legacy, defaultUsers);
   }
 
   localStorage.setItem(USERS_KEY, JSON.stringify(defaultUsers));
@@ -132,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(SESSION_KEY, stored);
       localStorage.removeItem(LEGACY_SESSION_KEY);
     }
-    return stored ? (JSON.parse(stored) as User) : null;
+    return safeParse<User | null>(stored, null);
   });
 
   const value = useMemo<AuthContextType>(
@@ -191,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.getItem(TENANT_STORE_KEY) ??
           localStorage.getItem(LEGACY_TENANT_STORE_KEY) ??
           "{}";
-        const nextTenantStore = JSON.parse(nextTenantStoreRaw) as Record<string, ReturnType<typeof createInitialTenantData>>;
+        const nextTenantStore = safeParse<Record<string, ReturnType<typeof createInitialTenantData>>>(nextTenantStoreRaw, {});
         const nextTenantData = createInitialTenantData(seedMode, company);
         nextTenantData.settings = {
           ...nextTenantData.settings,
@@ -234,3 +243,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+

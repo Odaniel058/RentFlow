@@ -69,6 +69,15 @@ interface AppDataContextType {
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
+const safeParse = <T,>(value: string | null, fallback: T): T => {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+};
+
 const createId = (prefix: string, records: { id: string }[]) => {
   const highestSequence = records.reduce((max, record) => {
     const [, rawNumber] = record.id.split("-");
@@ -150,7 +159,7 @@ const normalizeTenantState = (tenantState: AppDataState): AppDataState => ({
 const readStore = (): TenantStore => {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
-    const parsed = JSON.parse(stored) as TenantStore;
+    const parsed = safeParse<TenantStore>(stored, {});
     return Object.fromEntries(
       Object.entries(parsed).map(([tenantId, tenantState]) => [tenantId, normalizeTenantState(tenantState)]),
     );
@@ -160,7 +169,7 @@ const readStore = (): TenantStore => {
   if (legacyTenantStore) {
     localStorage.setItem(STORAGE_KEY, legacyTenantStore);
     localStorage.removeItem(LEGACY_TENANT_STORE_KEY);
-    const parsed = JSON.parse(legacyTenantStore) as TenantStore;
+    const parsed = safeParse<TenantStore>(legacyTenantStore, {});
     return Object.fromEntries(
       Object.entries(parsed).map(([tenantId, tenantState]) => [tenantId, normalizeTenantState(tenantState)]),
     );
@@ -169,7 +178,7 @@ const readStore = (): TenantStore => {
   const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
   if (legacy) {
     const migratedStore: TenantStore = {
-      "TENANT-DEMO": normalizeTenantState(JSON.parse(legacy) as AppDataState),
+      "TENANT-DEMO": normalizeTenantState(safeParse<AppDataState>(legacy, initialAppData)),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedStore));
     localStorage.removeItem(LEGACY_STORAGE_KEY);
@@ -445,3 +454,4 @@ export const useAppData = () => {
   }
   return ctx;
 };
+
