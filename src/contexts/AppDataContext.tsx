@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   AgendaEvent,
   AppDataState,
@@ -320,16 +320,23 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     setIsBootstrapping(true);
-    fetchTenantData(user.tenantId).then(async (data) => {
-      if (data.equipment.length === 0 && user.seedMode === "demo") {
-        await seedDemoData(user.tenantId, user.company);
-        const seeded = await fetchTenantData(user.tenantId);
-        setState(seeded);
-      } else {
-        setState(data);
-      }
-      setIsBootstrapping(false);
-    });
+    fetchTenantData(user.tenantId)
+      .then(async (data) => {
+        if (data.equipment.length === 0 && user.seedMode === "demo") {
+          await seedDemoData(user.tenantId, user.company);
+          const seeded = await fetchTenantData(user.tenantId);
+          setState(seeded);
+        } else {
+          setState(data);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to bootstrap tenant data:", error);
+        setState(initialAppData);
+      })
+      .finally(() => {
+        setIsBootstrapping(false);
+      });
   }, [user]);
 
   const analytics = useMemo(

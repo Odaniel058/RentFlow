@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase, isSupabaseConfigured, missingSupabaseEnvMessage } from "@/lib/supabase";
 import { CompanySettings, TenantSeedMode } from "@/data/mock-data";
 
@@ -135,8 +135,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     if (!isSupabaseConfigured || !supabase) throw new Error(missingSupabaseEnvMessage);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error("Email ou senha invalidos.");
+
+    const authUser = data.user;
+    if (!authUser) {
+      throw new Error("Nao foi possivel carregar a sessao da conta.");
+    }
+
+    const loaded = await loadUserFromSession(authUser.id, authUser.email ?? email);
+    if (!loaded) {
+      await supabase.auth.signOut();
+      throw new Error("Conta encontrada, mas o perfil da locadora nao foi configurado no banco.");
+    }
   };
 
   const signup = async ({ name, company, email, password, seedMode = "empty", settings }: SignupPayload) => {
