@@ -1,3 +1,5 @@
+import { supabase } from "@/lib/supabase";
+
 export type ActivityAction = "created" | "updated" | "deleted" | "converted" | "signed";
 export type ActivityEntity = "reservation" | "quote" | "contract" | "equipment" | "client";
 
@@ -11,9 +13,6 @@ export interface ActivityEntry {
   description: string;
 }
 
-const activityKey = (tenantId: string) => `rentflow_activity_${tenantId}`;
-const MAX_ENTRIES = 100;
-
 export const logActivity = (
   tenantId: string,
   userName: string,
@@ -22,26 +21,40 @@ export const logActivity = (
   entityId: string,
   description: string,
 ): void => {
-  const entry: ActivityEntry = {
+  const entry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    tenant_id: tenantId,
     timestamp: new Date().toISOString(),
-    userName,
+    user_name: userName,
     action,
     entity,
-    entityId,
+    entity_id: entityId,
     description,
   };
-  const existing = getActivityLog(tenantId);
-  const updated = [entry, ...existing].slice(0, MAX_ENTRIES);
-  localStorage.setItem(activityKey(tenantId), JSON.stringify(updated));
-  window.dispatchEvent(new CustomEvent("rentflow:activity"));
+
+  // Fire and forget
+  supabase.from("activity_log").insert(entry).then(() => {
+    window.dispatchEvent(new CustomEvent("rentflow:activity"));
+  });
 };
 
-export const getActivityLog = (tenantId: string): ActivityEntry[] => {
-  try {
-    const stored = localStorage.getItem(activityKey(tenantId));
-    return stored ? (JSON.parse(stored) as ActivityEntry[]) : [];
-  } catch {
-    return [];
-  }
+export const getActivityLog = async (tenantId: string): Promise<ActivityEntry[]> => {
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("timestamp", { ascending: false })
+    .limit(100);
+
+  if (error || !data) return [];
+
+  return data.map((r) => ({
+    id: r.id,
+    timestamp: r.timestamp,
+    userName: r.user_name,
+    action: r.action as ActivityAction,
+    entity: r.entity as ActivityEntity,
+    entityId: r.entity_id,
+    description: r.description,
+  }));
 };

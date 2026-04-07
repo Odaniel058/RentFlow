@@ -71,9 +71,9 @@ const QuotesPage: React.FC = () => {
     }
   };
 
-  const handleShare = (quote: Quote) => {
+  const handleShare = async (quote: Quote) => {
     if (!user) return;
-    const token = createShareToken(user.tenantId, quote.id);
+    const token = await createShareToken(user.tenantId, quote.id);
     const url = `${window.location.origin}${window.location.pathname}#/proposta/${token}`;
     setShareUrl(url);
     setShareDialogOpen(true);

@@ -1,4 +1,4 @@
-const SHARE_KEY = "rentflow_share_tokens";
+import { supabase } from "@/lib/supabase";
 
 interface ShareEntry {
   tenantId: string;
@@ -6,22 +6,16 @@ interface ShareEntry {
   createdAt: string;
 }
 
-type ShareStore = Record<string, ShareEntry>;
-
-const readStore = (): ShareStore => {
-  try {
-    const s = localStorage.getItem(SHARE_KEY);
-    return s ? (JSON.parse(s) as ShareStore) : {};
-  } catch {
-    return {};
-  }
-};
-
-export const createShareToken = (tenantId: string, quoteId: string): string => {
+export const createShareToken = async (tenantId: string, quoteId: string): Promise<string> => {
   // Reuse existing token for the same quote if one exists
-  const store = readStore();
-  const existing = Object.entries(store).find(([, v]) => v.tenantId === tenantId && v.quoteId === quoteId);
-  if (existing) return existing[0];
+  const { data: existing } = await supabase
+    .from("share_tokens")
+    .select("token")
+    .eq("tenant_id", tenantId)
+    .eq("quote_id", quoteId)
+    .single();
+
+  if (existing?.token) return existing.token;
 
   const token = [
     Math.random().toString(36).slice(2, 6),
@@ -29,11 +23,17 @@ export const createShareToken = (tenantId: string, quoteId: string): string => {
     Math.random().toString(36).slice(2, 6),
   ].join("-");
 
-  store[token] = { tenantId, quoteId, createdAt: new Date().toISOString() };
-  localStorage.setItem(SHARE_KEY, JSON.stringify(store));
+  await supabase.from("share_tokens").insert({ token, tenant_id: tenantId, quote_id: quoteId });
   return token;
 };
 
-export const getShareEntry = (token: string): ShareEntry | null => {
-  return readStore()[token] ?? null;
+export const getShareEntry = async (token: string): Promise<ShareEntry | null> => {
+  const { data } = await supabase
+    .from("share_tokens")
+    .select("tenant_id, quote_id, created_at")
+    .eq("token", token)
+    .single();
+
+  if (!data) return null;
+  return { tenantId: data.tenant_id, quoteId: data.quote_id, createdAt: data.created_at };
 };

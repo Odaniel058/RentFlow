@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CheckCircle2, FileText, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
+import { CheckCircle2, FileText, Loader2, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
 import { getShareEntry } from "@/lib/shareTokens";
+import { supabase } from "@/lib/supabase";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-
-const TENANT_STORE_KEY = "rentflow_tenant_store_v2";
 
 interface QuoteItem {
   id: string;
@@ -34,42 +33,92 @@ interface RawSettings {
   phone?: string;
 }
 
-const readFromStore = (tenantId: string, quoteId: string): { quote: RawQuote; settings: RawSettings } | null => {
-  try {
-    const stored = localStorage.getItem(TENANT_STORE_KEY);
-    if (!stored) return null;
-    const store = JSON.parse(stored) as Record<string, { quotes: RawQuote[]; settings: RawSettings }>;
-    const tenant = store[tenantId];
-    if (!tenant) return null;
-    const quote = tenant.quotes?.find((q) => q.id === quoteId) ?? null;
-    if (!quote) return null;
-    return { quote, settings: tenant.settings };
-  } catch {
-    return null;
-  }
-};
-
-const updateStatusInStore = (tenantId: string, quoteId: string, status: string): boolean => {
-  try {
-    const stored = localStorage.getItem(TENANT_STORE_KEY);
-    if (!stored) return false;
-    const store = JSON.parse(stored) as Record<string, { quotes: RawQuote[] }>;
-    if (!store[tenantId]) return false;
-    store[tenantId].quotes = store[tenantId].quotes.map((q) => (q.id === quoteId ? { ...q, status } : q));
-    localStorage.setItem(TENANT_STORE_KEY, JSON.stringify(store));
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 const PublicQuotePage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
-  const entry = token ? getShareEntry(token) : null;
-  const raw = entry ? readFromStore(entry.tenantId, entry.quoteId) : null;
-  const [status, setStatus] = useState<string>(raw?.quote?.status ?? "");
+  const [loading, setLoading] = useState(true);
+  const [quote, setQuote] = useState<RawQuote | null>(null);
+  const [settings, setSettings] = useState<RawSettings | null>(null);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>("");
 
-  if (!entry || !raw) {
+  useEffect(() => {
+    if (!token) { setLoading(false); return; }
+
+    const load = async () => {
+      const entry = await getShareEntry(token);
+      if (!entry) { setLoading(false); return; }
+
+      setTenantId(entry.tenantId);
+
+      // Fetch quote + items in parallel
+      const [{ data: quoteRow }, { data: itemRows }, { data: settingsRow }] = await Promise.all([
+        supabase
+          .from("quotes")
+          .select("id, client_name, status, total, discount, notes, created_at_date, rental_start_date, rental_end_date, valid_until")
+          .eq("id", entry.quoteId)
+          .single(),
+        supabase
+          .from("quote_items")
+          .select("id, name, quantity, daily_rate, days")
+          .eq("quote_id", entry.quoteId),
+        supabase
+          .from("company_settings")
+          .select("company_name, email, phone")
+          .eq("tenant_id", entry.tenantId)
+          .single(),
+      ]);
+
+      if (!quoteRow) { setLoading(false); return; }
+
+      const mappedQuote: RawQuote = {
+        id: quoteRow.id,
+        clientName: quoteRow.client_name,
+        status: quoteRow.status,
+        total: Number(quoteRow.total),
+        discount: Number(quoteRow.discount),
+        notes: quoteRow.notes,
+        rentalStartDate: quoteRow.rental_start_date,
+        rentalEndDate: quoteRow.rental_end_date,
+        validUntil: quoteRow.valid_until,
+        items: (itemRows ?? []).map((i) => ({
+          id: i.id,
+          name: i.name,
+          quantity: i.quantity,
+          dailyRate: Number(i.daily_rate),
+          days: i.days,
+        })),
+      };
+
+      setQuote(mappedQuote);
+      setStatus(mappedQuote.status);
+      setSettings(settingsRow ? { companyName: settingsRow.company_name, email: settingsRow.email ?? undefined, phone: settingsRow.phone ?? undefined } : null);
+      setLoading(false);
+    };
+
+    load();
+  }, [token]);
+
+  const handleAccept = async () => {
+    if (!quote || !tenantId) return;
+    await supabase.from("quotes").update({ status: "approved" }).eq("id", quote.id);
+    setStatus("approved");
+  };
+
+  const handleReject = async () => {
+    if (!quote || !tenantId) return;
+    await supabase.from("quotes").update({ status: "rejected" }).eq("id", quote.id);
+    setStatus("rejected");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!quote) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4">
@@ -81,16 +130,7 @@ const PublicQuotePage: React.FC = () => {
     );
   }
 
-  const { quote, settings } = raw;
   const isResolved = status === "approved" || status === "rejected" || status === "converted";
-
-  const handleAccept = () => {
-    if (updateStatusInStore(entry.tenantId, entry.quoteId, "approved")) setStatus("approved");
-  };
-
-  const handleReject = () => {
-    if (updateStatusInStore(entry.tenantId, entry.quoteId, "rejected")) setStatus("rejected");
-  };
 
   return (
     <div className="min-h-screen bg-background">

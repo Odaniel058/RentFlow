@@ -30,11 +30,13 @@ const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const [period, setPeriod] = useState("month");
 
-  const recentActivity = useMemo(() => {
-    const log = getActivityLog(user?.tenantId ?? "");
-    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
-    const recent = new Set(log.filter(e => new Date(e.timestamp).getTime() > twoHoursAgo).map(e => e.entity));
-    return recent;
+  const [recentActivity, setRecentActivity] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!user?.tenantId) return;
+    getActivityLog(user.tenantId).then((log) => {
+      const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+      setRecentActivity(new Set(log.filter(e => new Date(e.timestamp).getTime() > twoHoursAgo).map(e => e.entity)));
+    });
   }, [user?.tenantId]);
 
   // Confetti on first visit of the session (only if there's revenue)
