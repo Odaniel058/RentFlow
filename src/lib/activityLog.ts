@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+﻿import { supabase, isSupabaseConfigured, missingSupabaseEnvMessage } from "@/lib/supabase";
 
 export type ActivityAction = "created" | "updated" | "deleted" | "converted" | "signed";
 export type ActivityEntity = "reservation" | "quote" | "contract" | "equipment" | "client";
@@ -21,6 +21,8 @@ export const logActivity = (
   entityId: string,
   description: string,
 ): void => {
+  if (!isSupabaseConfigured || !supabase) return;
+
   const entry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     tenant_id: tenantId,
@@ -32,13 +34,17 @@ export const logActivity = (
     description,
   };
 
-  // Fire and forget
   supabase.from("activity_log").insert(entry).then(() => {
     window.dispatchEvent(new CustomEvent("rentflow:activity"));
   });
 };
 
 export const getActivityLog = async (tenantId: string): Promise<ActivityEntry[]> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.warn(missingSupabaseEnvMessage);
+    return [];
+  }
+
   const { data, error } = await supabase
     .from("activity_log")
     .select("*")

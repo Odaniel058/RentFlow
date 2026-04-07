@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+﻿import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   AgendaEvent,
   AppDataState,
@@ -21,9 +21,9 @@ import {
 } from "@/data/mock-data";
 import { useAuth } from "@/contexts/AuthContext";
 import { logActivity } from "@/lib/activityLog";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type Upsert<T extends { id: string }> = Omit<T, "id"> & { id?: string };
 
@@ -55,7 +55,7 @@ interface AppDataContextType {
   resetData: () => void;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const emptyClientAddress = (): ClientAddress => ({
   zipCode: "", street: "", number: "", complement: "", district: "", city: "", state: "",
@@ -77,7 +77,7 @@ const upsertRecord = <T extends { id: string }>(records: T[], payload: Upsert<T>
   return { ...payload, id: createId(prefix, records) } as T;
 };
 
-// ─── DB ↔ App converters ──────────────────────────────────────────────────────
+// â”€â”€â”€ DB â†” App converters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const dbToEquipment = (r: any): Equipment => ({
@@ -218,9 +218,10 @@ const settingsToDb = (tenantId: string, s: CompanySettings) => ({
   equipment_categories: s.equipmentCategories,
 });
 
-// ─── Fetch all tenant data from Supabase ──────────────────────────────────────
+// â”€â”€â”€ Fetch all tenant data from Supabase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const fetchTenantData = async (tenantId: string): Promise<AppDataState> => {
+  if (!supabase) return initialAppData;
   const [
     { data: equipmentRows },
     { data: clientRows },
@@ -260,9 +261,10 @@ const fetchTenantData = async (tenantId: string): Promise<AppDataState> => {
   };
 };
 
-// ─── Seed demo data into Supabase ─────────────────────────────────────────────
+// â”€â”€â”€ Seed demo data into Supabase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const seedDemoData = async (tenantId: string, companyName: string) => {
+  if (!supabase) return;
   const seeded = createSeededAppData(companyName);
 
   const equipmentInserts = seeded.equipment.map((e) => equipmentToDb(tenantId, e));
@@ -295,7 +297,7 @@ const seedDemoData = async (tenantId: string, companyName: string) => {
   }
 };
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Context â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
@@ -305,6 +307,12 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [state, setState] = useState<AppDataState>(initialAppData);
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setState(initialAppData);
+      setIsBootstrapping(false);
+      return;
+    }
+
     if (!user) {
       setState(initialAppData);
       setIsBootstrapping(false);
@@ -313,7 +321,6 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setIsBootstrapping(true);
     fetchTenantData(user.tenantId).then(async (data) => {
-      // If no equipment exists and seedMode is demo, seed the data
       if (data.equipment.length === 0 && user.seedMode === "demo") {
         await seedDemoData(user.tenantId, user.company);
         const seeded = await fetchTenantData(user.tenantId);
@@ -354,7 +361,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? s.equipment.map((i) => (i.id === payload.id ? record : i))
             : [record, ...s.equipment],
         }));
-        if (!user) return record;
+        if (!user || !supabase) return record;
         const dbRow = equipmentToDb(user.tenantId, record);
         supabase.from("equipment").upsert(dbRow);
         if (!payload.id) logActivity(user.tenantId, user.name, "created", "equipment", record.id, `Equipamento adicionado: ${record.name}`);
@@ -371,7 +378,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             items: kit.items.filter((name) => name !== s.equipment.find((e) => e.id === id)?.name),
           })),
         }));
-        if (!user) return;
+        if (!user || !supabase) return;
         supabase.from("equipment").delete().eq("id", id);
       },
 
@@ -387,7 +394,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? s.clients.map((i) => (i.id === payload.id ? normalized : i))
             : [normalized, ...s.clients],
         }));
-        if (!user) return normalized;
+        if (!user || !supabase) return normalized;
         supabase.from("clients").upsert(clientToDb(user.tenantId, normalized));
         if (!payload.id) logActivity(user.tenantId, user.name, "created", "client", normalized.id, `Cliente cadastrado: ${normalized.name}`);
         return normalized;
@@ -395,7 +402,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       deleteClient: (id) => {
         mutate((s) => ({ ...s, clients: s.clients.filter((i) => i.id !== id) }));
-        if (!user) return;
+        if (!user || !supabase) return;
         supabase.from("clients").delete().eq("id", id);
       },
 
@@ -407,7 +414,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? s.reservations.map((i) => (i.id === payload.id ? record : i))
             : [record, ...s.reservations],
         }));
-        if (!user) return record;
+        if (!user || !supabase) return record;
         supabase.from("reservations").upsert(reservationToDb(user.tenantId, record));
         logActivity(user.tenantId, user.name, payload.id ? "updated" : "created", "reservation", record.id,
           payload.id ? `Reserva atualizada: ${record.clientName}` : `Nova reserva para ${record.clientName}`);
@@ -422,7 +429,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
           agendaEvents: s.agendaEvents.filter((i) => i.reservationId !== id),
           contracts: s.contracts.filter((i) => i.reservationId !== id),
         }));
-        if (!user) return;
+        if (!user || !supabase) return;
         // Contracts cascade via FK, agenda_events deleted explicitly
         supabase.from("agenda_events").delete().eq("reservation_id", id);
         supabase.from("reservations").delete().eq("id", id);
@@ -441,7 +448,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? s.quotes.map((i) => (i.id === payload.id ? record : i))
             : [record, ...s.quotes],
         }));
-        if (!user) return record;
+        if (!user || !supabase) return record;
         supabase.from("quotes").upsert(quoteToDb(user.tenantId, record)).then(async () => {
           // Delete existing items and re-insert
           await supabase.from("quote_items").delete().eq("quote_id", record.id);
@@ -457,7 +464,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       deleteQuote: (id) => {
         mutate((s) => ({ ...s, quotes: s.quotes.filter((i) => i.id !== id) }));
-        if (!user) return;
+        if (!user || !supabase) return;
         // quote_items cascade via FK
         supabase.from("quotes").delete().eq("id", id);
       },
@@ -516,14 +523,14 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? s.kits.map((i) => (i.id === payload.id ? record : i))
             : [record, ...s.kits],
         }));
-        if (!user) return record;
+        if (!user || !supabase) return record;
         supabase.from("kits").upsert(kitToDb(user.tenantId, record));
         return record;
       },
 
       deleteKit: (id) => {
         mutate((s) => ({ ...s, kits: s.kits.filter((i) => i.id !== id) }));
-        if (!user) return;
+        if (!user || !supabase) return;
         supabase.from("kits").delete().eq("id", id);
       },
 
@@ -536,7 +543,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? s.contracts.map((i) => (i.id === payload.id ? record : i))
             : [record, ...s.contracts],
         }));
-        if (!user) return record;
+        if (!user || !supabase) return record;
         supabase.from("contracts").upsert(contractToDb(user.tenantId, record));
         if (!payload.id) logActivity(user.tenantId, user.name, "created", "contract", record.id, `Contrato gerado`);
         else if (payload.status === "signed" && prevContract?.status !== "signed")
@@ -546,7 +553,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       deleteContract: (id) => {
         mutate((s) => ({ ...s, contracts: s.contracts.filter((i) => i.id !== id) }));
-        if (!user) return;
+        if (!user || !supabase) return;
         supabase.from("contracts").delete().eq("id", id);
       },
 
@@ -558,25 +565,25 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             ? s.agendaEvents.map((i) => (i.id === payload.id ? record : i))
             : [record, ...s.agendaEvents],
         }));
-        if (!user) return record;
+        if (!user || !supabase) return record;
         supabase.from("agenda_events").upsert(agendaEventToDb(user.tenantId, record));
         return record;
       },
 
       deleteAgendaEvent: (id) => {
         mutate((s) => ({ ...s, agendaEvents: s.agendaEvents.filter((i) => i.id !== id) }));
-        if (!user) return;
+        if (!user || !supabase) return;
         supabase.from("agenda_events").delete().eq("id", id);
       },
 
       updateSettings: (payload) => {
         mutate((s) => ({ ...s, settings: payload }));
-        if (!user) return;
+        if (!user || !supabase) return;
         supabase.from("company_settings").upsert(settingsToDb(user.tenantId, payload));
       },
 
       resetData: async () => {
-        if (!user) return;
+        if (!user || !supabase) return;
         // Delete all tenant data (cascade handles children)
         await Promise.all([
           supabase.from("agenda_events").delete().eq("tenant_id", user.tenantId),
@@ -607,3 +614,7 @@ export const useAppData = () => {
   if (!ctx) throw new Error("useAppData must be used within AppDataProvider");
   return ctx;
 };
+
+
+
+

@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+﻿import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase, isSupabaseConfigured, missingSupabaseEnvMessage } from "@/lib/supabase";
 import { CompanySettings, TenantSeedMode } from "@/data/mock-data";
 
 export interface User {
@@ -56,6 +56,8 @@ const slugify = (value: string) =>
     .slice(0, 24) || "tenant";
 
 const loadUserFromSession = async (authId: string, email: string): Promise<User | null> => {
+  if (!supabase) return null;
+
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("name, company, tenant_id")
@@ -86,7 +88,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [workspace, setWorkspace] = useState<TenantWorkspace | null>(null);
 
   useEffect(() => {
-    // Restore session on mount
+    if (!isSupabaseConfigured || !supabase) {
+      setIsLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const loaded = await loadUserFromSession(session.user.id, session.user.email ?? "");
@@ -103,8 +109,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
         setUser(null);
         setWorkspace(null);
@@ -126,17 +133,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (!isSupabaseConfigured || !supabase) throw new Error(missingSupabaseEnvMessage);
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error("Email ou senha inválidos.");
+    if (error) throw new Error("Email ou senha invalidos.");
   };
 
   const signup = async ({ name, company, email, password, seedMode = "empty", settings }: SignupPayload) => {
+    if (!isSupabaseConfigured || !supabase) throw new Error(missingSupabaseEnvMessage);
     if (password.length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
 
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       if (error.message.toLowerCase().includes("already")) {
-        throw new Error("Já existe uma conta com esse email.");
+        throw new Error("Ja existe uma conta com esse email.");
       }
       throw new Error(error.message);
     }
@@ -146,7 +156,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const tenantId = `TENANT-${slugify(company)}-${Date.now().toString(36)}`;
 
-    // 1. Create tenant
     const { error: tenantError } = await supabase.from("tenants").insert({
       id: tenantId,
       company,
@@ -154,7 +163,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     if (tenantError) throw new Error("Falha ao criar workspace: " + tenantError.message);
 
-    // 2. Create profile
     const { error: profileError } = await supabase.from("profiles").insert({
       id: authUser.id,
       name,
@@ -163,7 +171,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     if (profileError) throw new Error("Falha ao criar perfil: " + profileError.message);
 
-    // 3. Create company settings
     await supabase.from("company_settings").insert({
       tenant_id: tenantId,
       company_name: settings?.companyName ?? company,
@@ -176,15 +183,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       theme_preference: settings?.themePreference ?? "dark",
       equipment_categories: JSON.stringify(
         settings?.equipmentCategories?.filter(Boolean) ?? [
-          "Câmeras",
+          "Cameras",
           "Lentes",
-          "Iluminação",
-          "Áudio",
-          "Acessórios",
+          "Iluminacao",
+          "Audio",
+          "Acessorios",
           "Suportes",
           "Monitores",
           "Baterias",
-        ]
+        ],
       ),
     });
 
@@ -192,10 +199,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (!isSupabaseConfigured || !supabase) return;
     await supabase.auth.signOut();
   };
 
   const requestPasswordReset = async (email: string) => {
+    if (!isSupabaseConfigured || !supabase) throw new Error(missingSupabaseEnvMessage);
+
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw new Error("Nenhuma conta encontrada para esse email.");
   };

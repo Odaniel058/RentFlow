@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+﻿import { supabase, isSupabaseConfigured, missingSupabaseEnvMessage } from "@/lib/supabase";
 
 interface ShareEntry {
   tenantId: string;
@@ -7,7 +7,10 @@ interface ShareEntry {
 }
 
 export const createShareToken = async (tenantId: string, quoteId: string): Promise<string> => {
-  // Reuse existing token for the same quote if one exists
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error(missingSupabaseEnvMessage);
+  }
+
   const { data: existing } = await supabase
     .from("share_tokens")
     .select("token")
@@ -28,6 +31,11 @@ export const createShareToken = async (tenantId: string, quoteId: string): Promi
 };
 
 export const getShareEntry = async (token: string): Promise<ShareEntry | null> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.warn(missingSupabaseEnvMessage);
+    return null;
+  }
+
   const { data } = await supabase
     .from("share_tokens")
     .select("tenant_id, quote_id, created_at")
