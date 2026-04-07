@@ -11,6 +11,19 @@ export interface User {
   seedMode: TenantSeedMode;
 }
 
+const DEMO_EMAIL = "admin@rentflow.app";
+const DEMO_PASSWORD = "rentflow123";
+const DEMO_SESSION_KEY = "rentflow_demo_session";
+
+const DEMO_USER: User = {
+  id: "demo-user-id",
+  email: DEMO_EMAIL,
+  name: "Admin Demo",
+  company: "RentFlow Demo",
+  tenantId: "TENANT-DEMO",
+  seedMode: "demo",
+};
+
 export interface TenantWorkspace {
   id: string;
   company: string;
@@ -89,6 +102,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
+      const saved = localStorage.getItem(DEMO_SESSION_KEY);
+      if (saved) {
+        try { setUser(JSON.parse(saved)); } catch { /* ignore */ }
+      }
       setIsLoading(false);
       return;
     }
@@ -133,7 +150,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    if (!isSupabaseConfigured || !supabase) throw new Error(missingSupabaseEnvMessage);
+    if (!isSupabaseConfigured || !supabase) {
+      if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+        localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(DEMO_USER));
+        setUser(DEMO_USER);
+        return;
+      }
+      throw new Error(missingSupabaseEnvMessage);
+    }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error("Email ou senha invalidos.");
@@ -210,7 +234,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured || !supabase) {
+      localStorage.removeItem(DEMO_SESSION_KEY);
+      setUser(null);
+      return;
+    }
     await supabase.auth.signOut();
   };
 
