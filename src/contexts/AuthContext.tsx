@@ -243,12 +243,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    if (!isSupabaseConfigured || !supabase) {
+    // Demo session is always local — clear it regardless of Supabase config
+    if (localStorage.getItem(DEMO_SESSION_KEY)) {
       localStorage.removeItem(DEMO_SESSION_KEY);
       setUser(null);
       return;
     }
-    await supabase.auth.signOut();
+    if (isSupabaseConfigured && supabase) {
+      await supabase.auth.signOut();
+    }
+    setUser(null);
   };
 
   const requestPasswordReset = async (email: string) => {
