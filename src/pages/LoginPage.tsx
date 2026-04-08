@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowRight, Film, Eye, EyeOff, KeyRound, Camera, Aperture, Video } from "lucide-react";
+import { ArrowRight, Film, Eye, EyeOff, KeyRound, Camera, Aperture, Video, Mic, Lightbulb, Monitor, Battery, ScanLine, Clapperboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,13 +13,30 @@ import {
 import { Alert } from "@/components/ui/alert";
 import { toast } from "sonner";
 
-const FLOATING = [
-  { Icon: Camera,   top: "12%",  left: "8%",  size: 48, delay: 0 },
-  { Icon: Video,    top: "55%",  left: "5%",  size: 36, delay: 0.8 },
-  { Icon: Aperture, top: "78%",  left: "18%", size: 56, delay: 0.4 },
-  { Icon: Film,     top: "25%",  left: "82%", size: 40, delay: 1.2 },
-  { Icon: Camera,   top: "68%",  left: "88%", size: 32, delay: 0.6 },
-  { Icon: Video,    top: "88%",  left: "60%", size: 44, delay: 1.0 },
+// Orbiting equipment icons config
+type OrbitIcon = {
+  Icon: React.ElementType;
+  size: number;
+  radius: number;
+  duration: number;
+  delay: number;
+  reverse?: boolean;
+  color: string;
+};
+
+const ORBIT_ICONS: OrbitIcon[] = [
+  { Icon: Camera,      size: 22, radius: 80,  duration: 18, delay: 0,  reverse: false, color: "text-primary" },
+  { Icon: Video,       size: 20, radius: 80,  duration: 18, delay: 9,  reverse: false, color: "text-primary/70" },
+  { Icon: Film,        size: 22, radius: 140, duration: 24, delay: 0,  reverse: true,  color: "text-primary" },
+  { Icon: Aperture,    size: 20, radius: 140, duration: 24, delay: 8,  reverse: true,  color: "text-primary/70" },
+  { Icon: Mic,         size: 18, radius: 140, duration: 24, delay: 16, reverse: true,  color: "text-primary/60" },
+  { Icon: Lightbulb,   size: 22, radius: 200, duration: 32, delay: 0,  reverse: false, color: "text-primary" },
+  { Icon: Monitor,     size: 20, radius: 200, duration: 32, delay: 8,  reverse: false, color: "text-primary/70" },
+  { Icon: Battery,     size: 18, radius: 200, duration: 32, delay: 16, reverse: false, color: "text-primary/60" },
+  { Icon: ScanLine,    size: 18, radius: 200, duration: 32, delay: 24, reverse: false, color: "text-primary/50" },
+  { Icon: Clapperboard,size: 22, radius: 260, duration: 40, delay: 0,  reverse: true,  color: "text-primary" },
+  { Icon: Camera,      size: 18, radius: 260, duration: 40, delay: 13, reverse: true,  color: "text-primary/70" },
+  { Icon: Video,       size: 20, radius: 260, duration: 40, delay: 26, reverse: true,  color: "text-primary/50" },
 ];
 
 const LoginPage: React.FC = () => {
@@ -71,33 +88,70 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen flex bg-background overflow-hidden">
 
       {/* ── LEFT PANEL ── */}
-      <div className="hidden lg:flex lg:w-[52%] relative overflow-hidden">
-        <div className="absolute inset-0 gradient-cinematic" />
-        <div className="absolute inset-0 hero-grid-bg opacity-40" />
-        <div className="absolute inset-0 hero-radial-fade" />
+      <div className="hidden lg:flex lg:w-[52%] relative overflow-hidden bg-background">
+        <div className="absolute inset-0 gradient-cinematic opacity-60" />
+        <div className="absolute inset-0 hero-grid-bg opacity-20" />
 
-        {FLOATING.map(({ Icon, top, left, size, delay }, i) => (
+        {/* Ripple rings */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {[80, 140, 200, 260, 320].map((r, i) => (
+            <span
+              key={r}
+              className="absolute rounded-full border border-primary/20 animate-ripple"
+              style={{
+                width: r * 2,
+                height: r * 2,
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                ["--i" as string]: i,
+                animationDelay: `${i * 0.4}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Orbiting equipment icons */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {ORBIT_ICONS.map(({ Icon, size, radius, duration, delay, reverse, color }, i) => (
+            <div
+              key={i}
+              className={`absolute flex items-center justify-center rounded-full animate-orbit ${reverse ? "[animation-direction:reverse]" : ""}`}
+              style={{
+                ["--radius" as string]: radius,
+                ["--duration" as string]: duration,
+                ["--delay" as string]: -delay,
+                width: size + 16,
+                height: size + 16,
+                animationDelay: `calc(${-delay} * 1s)`,
+              }}
+            >
+              <div className="glass-card flex items-center justify-center rounded-xl p-1.5 border-primary/20">
+                <Icon className={color} size={size} strokeWidth={1.5} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Center logo */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <motion.div
-            key={i}
-            className="absolute text-primary/10 pointer-events-none"
-            style={{ top, left }}
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1, y: [0, -14, 0] }}
-            transition={{
-              opacity: { delay, duration: 1 },
-              scale:   { delay, duration: 1 },
-              y: { delay: delay + 0.5, duration: 5 + i * 0.7, repeat: Infinity, ease: "easeInOut" },
-            }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="w-16 h-16 rounded-2xl gradient-gold flex items-center justify-center shadow-2xl"
+            style={{ boxShadow: "0 0 40px hsl(var(--primary)/0.4)" }}
           >
-            <Icon size={size} strokeWidth={0.8} />
+            <Film className="h-7 w-7 text-primary-foreground" strokeWidth={2} />
           </motion.div>
-        ))}
+        </div>
 
+        {/* Bottom content */}
         <div className="relative z-10 flex flex-col justify-between p-14 w-full">
           <Link to="/" className="flex items-center gap-3">
             <motion.div
               whileHover={{ scale: 1.08, rotate: 6 }}
-              className="w-10 h-10 rounded-xl gradient-gold flex items-center justify-center animate-glow-pulse"
+              className="w-10 h-10 rounded-xl gradient-gold flex items-center justify-center"
             >
               <Film className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
             </motion.div>

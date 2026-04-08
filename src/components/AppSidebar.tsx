@@ -1,5 +1,5 @@
 ﻿import React, { useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
@@ -57,6 +57,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onCloseMobile,
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { logout, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -326,7 +327,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 h-10 text-sm rounded-xl text-destructive hover:text-destructive hover:bg-destructive/8"
-          onClick={logout}
+          onClick={async () => { await logout(); navigate("/login", { replace: true }); }}
         >
           <LogOut className="h-[17px] w-[17px] flex-shrink-0" strokeWidth={1.75} />
           <AnimatePresence initial={false}>
