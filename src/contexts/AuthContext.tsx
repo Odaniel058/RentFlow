@@ -150,14 +150,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    if (!isSupabaseConfigured || !supabase) {
-      if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-        localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(DEMO_USER));
-        setUser(DEMO_USER);
-        return;
-      }
-      throw new Error(missingSupabaseEnvMessage);
+    // Demo credentials always bypass Supabase (works on any deploy)
+    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+      localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(DEMO_USER));
+      setUser(DEMO_USER);
+      return;
     }
+
+    if (!isSupabaseConfigured || !supabase) throw new Error(missingSupabaseEnvMessage);
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error("Email ou senha invalidos.");

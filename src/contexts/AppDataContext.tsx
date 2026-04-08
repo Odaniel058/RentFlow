@@ -307,13 +307,20 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [state, setState] = useState<AppDataState>(initialAppData);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!user) {
       setState(initialAppData);
       setIsBootstrapping(false);
       return;
     }
 
-    if (!user) {
+    // Demo user always uses local seeded data (no Supabase needed)
+    if (user.tenantId === "TENANT-DEMO") {
+      setState(createSeededAppData(user.company));
+      setIsBootstrapping(false);
+      return;
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
       setState(initialAppData);
       setIsBootstrapping(false);
       return;
