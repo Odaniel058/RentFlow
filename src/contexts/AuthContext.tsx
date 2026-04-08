@@ -101,11 +101,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [workspace, setWorkspace] = useState<TenantWorkspace | null>(null);
 
   useEffect(() => {
+    // Always restore demo session from localStorage first (works with or without Supabase)
+    const savedDemo = localStorage.getItem(DEMO_SESSION_KEY);
+    if (savedDemo) {
+      try {
+        setUser(JSON.parse(savedDemo));
+        setIsLoading(false);
+        return;
+      } catch { /* ignore malformed data */ }
+    }
+
     if (!isSupabaseConfigured || !supabase) {
-      const saved = localStorage.getItem(DEMO_SESSION_KEY);
-      if (saved) {
-        try { setUser(JSON.parse(saved)); } catch { /* ignore */ }
-      }
       setIsLoading(false);
       return;
     }
@@ -129,6 +135,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Never let Supabase auth events affect the demo session
+      if (localStorage.getItem(DEMO_SESSION_KEY)) return;
+
       if (event === "SIGNED_OUT") {
         setUser(null);
         setWorkspace(null);
