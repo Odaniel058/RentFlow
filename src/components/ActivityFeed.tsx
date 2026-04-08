@@ -34,7 +34,9 @@ export const ActivityFeed: React.FC<{ limit?: number }> = ({ limit = 10 }) => {
 
   useEffect(() => {
     if (!user) return;
-    const refresh = () => setEntries(getActivityLog(user.tenantId).slice(0, limit));
+    const refresh = () => {
+      getActivityLog(user.tenantId).then((log) => setEntries(log.slice(0, limit)));
+    };
     refresh();
     window.addEventListener("rentflow:activity", refresh);
     return () => window.removeEventListener("rentflow:activity", refresh);
