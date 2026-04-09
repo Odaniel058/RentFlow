@@ -1,4 +1,4 @@
-﻿import React, { useRef } from "react";
+import React, { useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +7,6 @@ import {
   BarChart3,
   Boxes,
   CalendarDays,
-  ChevronLeft,
   ChevronRight,
   DollarSign,
   Film,
@@ -27,18 +26,21 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", aliases: [] },
-  { label: "Invent\u00e1rio", icon: Package, path: "/inventory", aliases: [] },
-  { label: "Reservas", icon: CalendarDays, path: "/reservations", aliases: [] },
-  { label: "Propostas", icon: FileText, path: "/quotes", aliases: [] },
-  { label: "Agenda", icon: CalendarDays, path: "/calendar", aliases: ["/agenda"] },
-  { label: "Clientes", icon: Users, path: "/clients", aliases: [] },
-  { label: "Kits", icon: Boxes, path: "/kits", aliases: [] },
-  { label: "Contratos", icon: ScrollText, path: "/contracts", aliases: [] },
-  { label: "Financeiro", icon: DollarSign, path: "/finance", aliases: ["/financial"] },
-  { label: "Relat\u00f3rios", icon: BarChart3, path: "/reports", aliases: [] },
-  { label: "Configura\u00e7\u00f5es", icon: Settings, path: "/settings", aliases: [] },
+const navMain = [
+  { label: "Dashboard",    icon: LayoutDashboard, path: "/dashboard",    aliases: [] },
+  { label: "Inventário",   icon: Package,          path: "/inventory",    aliases: [] },
+  { label: "Reservas",     icon: CalendarDays,     path: "/reservations", aliases: [] },
+  { label: "Propostas",    icon: FileText,         path: "/quotes",       aliases: [] },
+  { label: "Agenda",       icon: CalendarDays,     path: "/calendar",     aliases: ["/agenda"] },
+  { label: "Clientes",     icon: Users,            path: "/clients",      aliases: [] },
+  { label: "Kits",         icon: Boxes,            path: "/kits",         aliases: [] },
+  { label: "Contratos",    icon: ScrollText,       path: "/contracts",    aliases: [] },
+  { label: "Financeiro",   icon: DollarSign,       path: "/finance",      aliases: ["/financial"] },
+  { label: "Relatórios",   icon: BarChart3,        path: "/reports",      aliases: [] },
+];
+
+const navSystem = [
+  { label: "Configurações", icon: Settings, path: "/settings", aliases: [] },
 ];
 
 interface AppSidebarProps {
@@ -75,27 +77,97 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       Math.max(originY, window.innerHeight - originY)
     ));
 
-    const bgColor = theme === 'dark' ? 'hsl(0 0% 99%)' : 'hsl(224 14% 5%)';
+    const bgColor = theme === 'dark' ? 'hsl(0 0% 99%)' : 'hsl(228 22% 4%)';
     const overlay = document.createElement('div');
     overlay.style.cssText = `position:fixed;inset:0;z-index:9999;pointer-events:none;background:${bgColor};clip-path:circle(0px at ${originX}px ${originY}px);will-change:clip-path;`;
     document.body.appendChild(overlay);
 
-    // Force reflow then expand
     overlay.getBoundingClientRect();
     overlay.style.transition = 'clip-path 430ms cubic-bezier(0.4,0,0.6,1)';
     overlay.style.clipPath = `circle(${maxR}px at ${originX}px ${originY}px)`;
-
-    // Toggle theme at peak
     setTimeout(() => toggleTheme(), 420);
-
-    // Contract back
     setTimeout(() => {
       overlay.style.transition = 'clip-path 380ms cubic-bezier(0.4,0,0.6,1)';
       overlay.style.clipPath = `circle(0px at ${originX}px ${originY}px)`;
     }, 460);
-
-    // Remove overlay
     setTimeout(() => overlay.remove(), 860);
+  };
+
+  const isActive = (item: typeof navMain[0]) =>
+    location.pathname === item.path ||
+    item.aliases.includes(location.pathname) ||
+    (item.path === "/quotes" && location.pathname.startsWith("/quotes/"));
+
+  const NavItem = ({ item, idx }: { item: typeof navMain[0]; idx: number }) => {
+    const active = isActive(item);
+    return (
+      <motion.div
+        key={item.path}
+        initial={{ opacity: 0, x: -14 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: idx * 0.035, duration: 0.28, ease: "easeOut" }}
+      >
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Link
+              to={item.path}
+              onClick={onCloseMobile}
+              className={`flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative ${
+                active
+                  ? "sidebar-item-active text-primary border border-primary/20"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground border border-transparent hover:border-border/30"
+              }`}
+            >
+              {active && (
+                <motion.div
+                  layoutId="sidebar-indicator"
+                  className="absolute inset-0 rounded-xl"
+                  style={{
+                    background: 'linear-gradient(135deg, hsl(var(--gold) / 0.13), hsl(var(--gold) / 0.05))',
+                  }}
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
+
+              <motion.div
+                whileHover={{ scale: 1.18 }}
+                transition={{ type: "spring", stiffness: 500, damping: 18 }}
+                className={`flex-shrink-0 relative z-10 ${active ? "text-primary" : "group-hover:text-foreground"}`}
+              >
+                <item.icon className="h-[17px] w-[17px]" strokeWidth={active ? 2.4 : 1.7} />
+              </motion.div>
+
+              <AnimatePresence initial={false}>
+                {(!collapsed || isMobile) && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: "auto" }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="whitespace-nowrap overflow-hidden relative z-10 tracking-tight"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+
+              {collapsed && !isMobile && active && (
+                <motion.div
+                  layoutId="dot-indicator"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full bg-primary"
+                  style={{ boxShadow: '0 0 8px hsl(var(--gold) / 0.5)' }}
+                />
+              )}
+            </Link>
+          </TooltipTrigger>
+          {collapsed && !isMobile && (
+            <TooltipContent side="right" className="glass-card border-border/60 text-xs font-medium px-3 py-1.5">
+              {item.label}
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </motion.div>
+    );
   };
 
   const sidebarContent = (
@@ -108,25 +180,28 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         borderRight: '1px solid hsl(var(--sidebar-border))',
       }}
     >
-      {/* Subtle background texture */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
-        style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, hsl(var(--gold)) 0%, transparent 60%)`,
-        }}
+      {/* Ambient sidebar decorations */}
+      <div className="absolute inset-0 pointer-events-none sidebar-ambient" />
+      <div
+        className="absolute top-0 left-0 right-0 h-px opacity-40"
+        style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--gold)/0.35), transparent)' }}
       />
 
       {/* Logo / Brand */}
-      <div className="flex items-center justify-between gap-3 px-3.5 h-16 border-b border-sidebar-border relative z-10">
+      <div className="flex items-center justify-between gap-3 px-3.5 h-16 relative z-10"
+        style={{ borderBottom: '1px solid hsl(var(--sidebar-border))' }}
+      >
         <Link
           to="/dashboard"
           className="flex items-center gap-3 min-w-0 group"
           onClick={onCloseMobile}
         >
           <motion.div
-            whileHover={{ scale: 1.08, rotate: 5 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            whileHover={{ scale: 1.1, rotate: 6 }}
+            whileTap={{ scale: 0.93 }}
+            transition={{ type: "spring", stiffness: 420, damping: 14 }}
             className="w-9 h-9 rounded-xl gradient-gold flex items-center justify-center flex-shrink-0 animate-glow-pulse"
+            style={{ boxShadow: '0 0 18px hsl(var(--gold)/0.3), 0 0 48px hsl(var(--gold)/0.1)' }}
           >
             <Film className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
           </motion.div>
@@ -140,13 +215,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 className="min-w-0 overflow-hidden"
               >
-                <p
-                  className="font-bold text-base tracking-tight whitespace-nowrap font-display"
-                  style={{ color: 'hsl(var(--sidebar-foreground))' }}
-                >
+                <p className="font-bold text-base tracking-tight whitespace-nowrap font-display"
+                  style={{ color: 'hsl(var(--sidebar-foreground))' }}>
                   RentFlow
                 </p>
-                <p className="text-[10px] text-muted-foreground truncate font-medium tracking-wide uppercase opacity-60">
+                <p className="text-[10px] text-muted-foreground truncate font-medium tracking-[0.12em] uppercase opacity-55">
                   {user?.company}
                 </p>
               </motion.div>
@@ -155,99 +228,46 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </Link>
 
         {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-lg"
-            onClick={onCloseMobile}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={onCloseMobile}>
             <X className="h-4 w-4" />
           </Button>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 relative z-10">
-        {navItems.map((item, idx) => {
-          const active =
-            location.pathname === item.path ||
-            item.aliases.includes(location.pathname) ||
-            (item.path === "/quotes" && location.pathname.startsWith("/quotes/"));
+      <nav className="flex-1 overflow-y-auto py-3 px-2 relative z-10" style={{ gap: 2, display: 'flex', flexDirection: 'column' }}>
+        {/* Main nav */}
+        {navMain.map((item, idx) => (
+          <NavItem key={item.path} item={item} idx={idx} />
+        ))}
 
-          return (
+        {/* System group divider */}
+        <AnimatePresence initial={false}>
+          {(!collapsed || isMobile) && (
             <motion.div
-              key={item.path}
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.04, duration: 0.3, ease: "easeOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="nav-group-label mt-3"
             >
-              <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-            <Link
-                to={item.path}
-                onClick={onCloseMobile}
-                className={`flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative ${
-                  active
-                    ? "sidebar-item-active text-primary border border-primary/20"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground border border-transparent"
-                }`}
-              >
-                {active && (
-                  <motion.div
-                    layoutId="sidebar-indicator"
-                    className="absolute inset-0 rounded-xl"
-                    style={{
-                      background: 'linear-gradient(135deg, hsl(var(--gold) / 0.1), hsl(var(--gold) / 0.05))',
-                      border: '1px solid hsl(var(--gold) / 0.2)',
-                    }}
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-
-                <motion.div
-                  whileHover={{ scale: 1.15 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                  className={`flex-shrink-0 relative z-10 ${active ? "text-primary" : ""}`}
-                >
-                  <item.icon className="h-[17px] w-[17px]" strokeWidth={active ? 2.5 : 1.75} />
-                </motion.div>
-
-                <AnimatePresence initial={false}>
-                  {(!collapsed || isMobile) && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
-                      exit={{ opacity: 0, width: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="whitespace-nowrap overflow-hidden relative z-10 tracking-tight"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-
-                {/* Active dot indicator when collapsed */}
-                {collapsed && !isMobile && active && (
-                  <motion.div
-                    layoutId="dot-indicator"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full bg-primary"
-                  />
-                )}
-              </Link>
-              </TooltipTrigger>
-              {collapsed && !isMobile && (
-                <TooltipContent side="right" className="glass-card border-border/60 text-xs font-medium px-3 py-1.5">
-                  {item.label}
-                </TooltipContent>
-              )}
-            </Tooltip>
+              Sistema
             </motion.div>
-          );
-        })}
+          )}
+        </AnimatePresence>
+        {collapsed && !isMobile && (
+          <div className="h-px mx-2 my-2" style={{ background: 'hsl(var(--sidebar-border))' }} />
+        )}
+
+        {navSystem.map((item, idx) => (
+          <NavItem key={item.path} item={item} idx={navMain.length + idx} />
+        ))}
       </nav>
 
       {/* Bottom Actions */}
-      <div className="border-t border-sidebar-border p-2 space-y-0.5 relative z-10">
+      <div className="p-2 space-y-0.5 relative z-10"
+        style={{ borderTop: '1px solid hsl(var(--sidebar-border))' }}
+      >
         {/* User info (expanded only) */}
         <AnimatePresence>
           {(!collapsed || isMobile) && user && (
@@ -255,22 +275,28 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="px-2.5 py-2 mb-1"
+              className="px-2.5 py-2 mb-1 flex items-center gap-2.5"
             >
-              <p className="text-xs font-semibold text-foreground truncate">{user.name}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+              <div
+                className="w-7 h-7 rounded-lg gradient-gold flex items-center justify-center text-[11px] font-bold text-primary-foreground flex-shrink-0"
+              >
+                {user.name?.charAt(0).toUpperCase() ?? "U"}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate leading-tight">{user.name}</p>
+                <p className="text-[10px] text-muted-foreground truncate leading-tight opacity-70">{user.email}</p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* Theme toggle */}
         <button
           ref={themeBtnRef}
           onClick={handleThemeToggle}
-          className="w-full flex items-center gap-3 h-10 px-2.5 rounded-xl hover:bg-sidebar-accent transition-colors duration-200 text-sm font-medium text-sidebar-foreground"
+          className="w-full flex items-center gap-3 h-10 px-2.5 rounded-xl hover:bg-sidebar-accent transition-colors duration-200 text-sm font-medium text-sidebar-foreground group"
         >
-          {/* Day/Night pill */}
           <div className={`theme-toggle-pill ${theme === 'dark' ? 'theme-pill--dark' : 'theme-pill--light'}`}>
-            {/* Stars (dark only) */}
             {theme === 'dark' && (
               <>
                 <span className="theme-star" style={{ width: 2.5, height: 2.5, top: 5, right: 8, opacity: 0.9 }} />
@@ -278,7 +304,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 <span className="theme-star" style={{ width: 2, height: 2, top: 6, right: 18, opacity: 0.75 }} />
               </>
             )}
-            {/* Sliding thumb */}
             <motion.div
               className="theme-toggle-thumb"
               animate={{ x: theme === 'dark' ? 2 : 22 }}
@@ -308,7 +333,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             </motion.div>
           </div>
 
-          {/* Label */}
           <AnimatePresence initial={false}>
             {(!collapsed || isMobile) && (
               <motion.span
@@ -347,7 +371,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         {!isMobile && (
           <Button
             variant="ghost"
-            className="w-full justify-center h-9 rounded-xl mt-1"
+            className="w-full justify-center h-9 rounded-xl mt-1 hover:bg-sidebar-accent"
             onClick={onToggleCollapsed}
           >
             <motion.div animate={{ rotate: collapsed ? 0 : 180 }} transition={{ duration: 0.3 }}>
@@ -410,4 +434,3 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     </>
   );
 };
-

@@ -128,6 +128,19 @@ export default {
           "0%": { transform: "rotate(0deg) translateY(calc(var(--radius) * 1px)) rotate(0deg)" },
           "100%": { transform: "rotate(360deg) translateY(calc(var(--radius) * 1px)) rotate(-360deg)" },
         },
+        "float-orb": {
+          "0%, 100%": { transform: "translate(0px, 0px) scale(1)", opacity: "0.5" },
+          "33%": { transform: "translate(18px, -22px) scale(1.06)", opacity: "0.65" },
+          "66%": { transform: "translate(-14px, 12px) scale(0.94)", opacity: "0.4" },
+        },
+        "border-glow": {
+          "0%, 100%": { opacity: "0.3" },
+          "50%": { opacity: "0.75" },
+        },
+        "icon-pop": {
+          "0%": { transform: "scale(0.8) rotate(-8deg)", opacity: "0" },
+          "100%": { transform: "scale(1) rotate(0deg)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -140,6 +153,9 @@ export default {
         "count-up": "count-up 0.5s ease-out forwards",
         ripple: "ripple 3s ease calc(var(--i, 0) * 0.4s) infinite",
         orbit: "orbit calc(var(--duration) * 1s) linear infinite",
+        "float-orb": "float-orb 9s ease-in-out infinite",
+        "border-glow": "border-glow 3s ease-in-out infinite",
+        "icon-pop": "icon-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards",
       },
     },
   },

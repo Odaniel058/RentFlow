@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
+export type KPIAccent = 'gold' | 'info' | 'success' | 'warning' | 'danger';
+
 interface KPICardProps {
   title: string;
   value: string;
@@ -11,9 +13,53 @@ interface KPICardProps {
   icon: LucideIcon;
   index?: number;
   onClick?: () => void;
-  accentColor?: string;
+  accent?: KPIAccent;
   hasRecentActivity?: boolean;
 }
+
+const ACCENT_CONFIG: Record<KPIAccent, {
+  iconBg: string;
+  iconColor: string;
+  glow: string;
+  cardBg: string;
+  borderHover: string;
+}> = {
+  gold: {
+    iconBg: 'icon-bg-gold',
+    iconColor: 'hsl(43 90% 62%)',
+    glow: 'hsl(43 90% 57% / 0.15)',
+    cardBg: 'card-accent-gold',
+    borderHover: 'hsl(43 90% 57% / 0.35)',
+  },
+  info: {
+    iconBg: 'icon-bg-info',
+    iconColor: 'hsl(217 94% 68%)',
+    glow: 'hsl(217 94% 62% / 0.15)',
+    cardBg: 'card-accent-info',
+    borderHover: 'hsl(217 94% 62% / 0.35)',
+  },
+  success: {
+    iconBg: 'icon-bg-success',
+    iconColor: 'hsl(142 68% 52%)',
+    glow: 'hsl(142 68% 43% / 0.15)',
+    cardBg: 'card-accent-success',
+    borderHover: 'hsl(142 68% 43% / 0.35)',
+  },
+  warning: {
+    iconBg: 'icon-bg-warning',
+    iconColor: 'hsl(38 94% 58%)',
+    glow: 'hsl(38 94% 52% / 0.15)',
+    cardBg: 'card-accent-warning',
+    borderHover: 'hsl(38 94% 52% / 0.35)',
+  },
+  danger: {
+    iconBg: 'icon-bg-danger',
+    iconColor: 'hsl(0 80% 62%)',
+    glow: 'hsl(0 72% 51% / 0.15)',
+    cardBg: 'card-accent-danger',
+    borderHover: 'hsl(0 72% 51% / 0.35)',
+  },
+};
 
 // Animated number counter
 const AnimatedValue: React.FC<{ value: string }> = ({ value }) => {
@@ -24,7 +70,6 @@ const AnimatedValue: React.FC<{ value: string }> = ({ value }) => {
     if (hasAnimated.current) return;
     hasAnimated.current = true;
 
-    // Extract numeric part and prefix/suffix
     const match = value.match(/^([R$\s]*)([0-9.,]+)(.*)$/);
     if (!match) { setDisplayed(value); return; }
 
@@ -38,13 +83,10 @@ const AnimatedValue: React.FC<{ value: string }> = ({ value }) => {
     const tick = (now: number) => {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out expo
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
       const current = Math.round(target * eased);
-
       const formatted = new Intl.NumberFormat('pt-BR').format(current);
       setDisplayed(`${prefix}${formatted}${suffix}`);
-
       if (progress < 1) requestAnimationFrame(tick);
     };
 
@@ -64,13 +106,15 @@ export const KPICard: React.FC<KPICardProps> = ({
   icon: Icon,
   index = 0,
   onClick,
+  accent = 'gold',
   hasRecentActivity = false,
 }) => {
+  const cfg = ACCENT_CONFIG[accent];
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
-  const rotateX = useSpring(useTransform(mouseY, [0, 1], [7, -7]), { stiffness: 300, damping: 30 });
-  const rotateY = useSpring(useTransform(mouseX, [0, 1], [-7, 7]), { stiffness: 300, damping: 30 });
+  const rotateX = useSpring(useTransform(mouseY, [0, 1], [6, -6]), { stiffness: 280, damping: 28 });
+  const rotateY = useSpring(useTransform(mouseX, [0, 1], [-6, 6]), { stiffness: 280, damping: 28 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -84,35 +128,24 @@ export const KPICard: React.FC<KPICardProps> = ({
     mouseY.set(0.5);
   };
 
-  const changeIcon = changeType === 'positive'
-    ? TrendingUp
-    : changeType === 'negative'
-    ? TrendingDown
-    : Minus;
-  const ChangeIcon = changeIcon;
+  const ChangeIcon = changeType === 'positive' ? TrendingUp : changeType === 'negative' ? TrendingDown : Minus;
 
   const changeColor =
-    changeType === 'positive'
-      ? 'text-emerald-400'
-      : changeType === 'negative'
-      ? 'text-red-400'
-      : 'text-muted-foreground';
+    changeType === 'positive' ? 'metric-chip-positive' :
+    changeType === 'negative' ? 'metric-chip-negative' :
+    'metric-chip-neutral';
 
   return (
     <motion.div
       ref={cardRef}
-      initial={{ opacity: 0, y: 24, scale: 0.96 }}
+      initial={{ opacity: 0, y: 28, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        delay: index * 0.1,
-        duration: 0.5,
-        ease: [0.16, 1, 0.3, 1],
-      }}
+      transition={{ delay: index * 0.09, duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
       whileTap={onClick ? { scale: 0.98 } : {}}
-      style={{ rotateX, rotateY, transformPerspective: 800 }}
+      style={{ rotateX, rotateY, transformPerspective: 900 }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`kpi-card glass-card p-5 premium-shadow group relative overflow-hidden ${
+      className={`kpi-card glass-card p-5 premium-shadow group relative overflow-hidden ${cfg.cardBg} ${
         onClick ? 'cursor-pointer' : ''
       }`}
       onClick={onClick}
@@ -129,13 +162,13 @@ export const KPICard: React.FC<KPICardProps> = ({
 
       {/* Left accent bar */}
       <div
-        className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full opacity-60 group-hover:opacity-100 transition-opacity duration-300"
+        className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full opacity-50 group-hover:opacity-100 transition-opacity duration-300"
         style={{
           background: changeType === 'positive'
-            ? 'hsl(142 65% 42%)'
+            ? 'linear-gradient(180deg, hsl(142 68% 43%), hsl(142 68% 52%))'
             : changeType === 'negative'
-            ? 'hsl(0 72% 51%)'
-            : 'linear-gradient(180deg, hsl(var(--gold-dark)), hsl(var(--gold-light)))',
+            ? 'linear-gradient(180deg, hsl(0 72% 51%), hsl(0 80% 62%))'
+            : `linear-gradient(180deg, hsl(var(--gold-dark)), hsl(var(--gold-light)))`,
         }}
       />
 
@@ -144,44 +177,44 @@ export const KPICard: React.FC<KPICardProps> = ({
         <div className="absolute inset-0 shimmer-effect" />
       </div>
 
-      {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-      {/* Corner glow */}
-      <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-primary/5 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      {/* Ambient glow on hover */}
+      <div
+        className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none blur-2xl"
+        style={{ background: cfg.glow }}
+      />
 
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70 font-display">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/65 font-display">
             {title}
           </p>
           <motion.div
-            whileHover={{ rotate: 10, scale: 1.1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-            className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/15 group-hover:bg-primary/15 group-hover:border-primary/25 transition-colors duration-300"
+            whileHover={{ rotate: 12, scale: 1.12 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 14 }}
+            className={`p-2.5 rounded-xl border transition-all duration-300 ${cfg.iconBg}`}
           >
             <Icon className="h-4 w-4" strokeWidth={2} />
           </motion.div>
         </div>
 
         {/* Value */}
-        <div className="mb-2">
-          <p className="text-[1.75rem] font-bold tracking-tight text-foreground font-display leading-none">
+        <div className="mb-3">
+          <p className="stat-value text-[1.8rem] text-foreground">
             <AnimatedValue value={value} />
           </p>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {change && (
-            <div className={`flex items-center gap-1 text-xs font-medium ${changeColor}`}>
-              <ChangeIcon className="h-3 w-3" />
+            <div className={`metric-chip-premium ${changeColor} flex items-center gap-1`}>
+              <ChangeIcon className="h-2.5 w-2.5" />
               <span>{change}</span>
             </div>
           )}
           {subtitle && (
-            <span className="text-xs text-muted-foreground/60">{subtitle}</span>
+            <span className="text-[11px] text-muted-foreground/55">{subtitle}</span>
           )}
         </div>
       </div>

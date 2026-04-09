@@ -178,34 +178,53 @@ export const AppLayout: React.FC = () => {
         onCloseMobile={() => setMobileOpen(false)}
       />
       <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
-        <div className="relative sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border/40 bg-background/90 px-4 backdrop-blur-md after:pointer-events-none after:absolute after:inset-x-8 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-border/80 after:to-transparent sm:px-5 lg:px-8">
+        {/* ── Premium header ── */}
+        <div className="header-frosted header-gradient-line relative sticky top-0 z-20 flex h-16 items-center justify-between gap-3 px-4 sm:px-5 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <p className="hidden truncate font-display text-base font-semibold tracking-tight md:block">{pageTitle}</p>
+            <div className="hidden md:flex items-center gap-2">
+              <span className="font-display text-sm font-bold tracking-tight text-foreground">
+                {pageTitle}
+              </span>
+            </div>
+            <div className="hidden md:block w-px h-4 bg-border/60" />
             <div className="pl-10 md:pl-0">
               <Breadcrumb />
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <button
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+            {/* Search bar */}
+            <motion.button
               onClick={() => setCmdOpen(true)}
-              className="hidden items-center gap-2 rounded-xl border border-border/60 bg-surface/60 px-3 py-1.5 text-xs text-muted-foreground transition-all duration-200 hover:border-primary/30 hover:bg-surface hover:text-foreground md:flex"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="hidden items-center gap-2 rounded-xl border border-border/50 bg-surface/50 px-3 py-1.5 text-xs text-muted-foreground transition-all duration-200 hover:border-primary/25 hover:bg-surface hover:text-foreground md:flex"
+              style={{ boxShadow: 'inset 0 1px 0 hsl(0 0% 100%/0.04)' }}
             >
               <Search className="h-3.5 w-3.5" />
-              <span>Buscar...</span>
-              <kbd className="ml-2 rounded-lg border border-border/60 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/80">Ctrl K</kbd>
-            </button>
+              <span className="w-28">Buscar...</span>
+              <kbd className="ml-1 rounded-md border border-border/50 bg-background/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/70">
+                ⌘K
+              </kbd>
+            </motion.button>
+
             <NotificationsDropdown />
-            <div className="hidden items-center gap-2.5 rounded-xl border border-border/60 bg-surface/60 px-3 py-1.5 transition-colors duration-200 hover:border-border md:flex">
+
+            {/* User chip */}
+            <div className="hidden items-center gap-2.5 rounded-xl border border-border/50 bg-surface/50 px-2.5 py-1.5 transition-all duration-200 hover:border-border/80 hover:bg-surface md:flex"
+              style={{ boxShadow: 'inset 0 1px 0 hsl(0 0% 100%/0.04)' }}
+            >
               <motion.div
-                whileHover={{ scale: 1.08 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full gradient-gold text-[11px] font-bold text-primary-foreground"
+                whileHover={{ scale: 1.1 }}
+                transition={{ type: "spring", stiffness: 420, damping: 14 }}
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg gradient-gold text-[11px] font-bold text-primary-foreground"
+                style={{ boxShadow: '0 0 12px hsl(var(--gold)/0.25)' }}
               >
                 {user?.name?.charAt(0).toUpperCase() ?? "U"}
               </motion.div>
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-xs font-semibold leading-tight">{user?.name}</span>
-                <span className="truncate text-[10px] leading-tight text-muted-foreground">{user?.company}</span>
+                <span className="truncate text-[10px] leading-tight text-muted-foreground/70">{user?.company}</span>
               </div>
             </div>
           </div>
@@ -214,10 +233,10 @@ export const AppLayout: React.FC = () => {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto max-w-[1600px] p-4 sm:p-5 md:pt-6 lg:p-8"
           >
             <Outlet />
