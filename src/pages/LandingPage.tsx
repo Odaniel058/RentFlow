@@ -37,7 +37,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BackToTop } from "@/components/BackToTop";
-import { HeroSection } from "@/components/Hero/HeroSection";
+import { FilmSequenceHero } from "@/components/FilmSequenceHero";
 
 /* ─── Data ─── */
 
@@ -351,7 +351,7 @@ const LandingPage: React.FC = () => {
   ];
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-white overflow-x-hidden" style={{ color: "#1D1D1F" }}>
+    <div ref={containerRef} className="min-h-screen overflow-x-hidden" style={{ color: "#1D1D1F", background: "#050505" }}>
       {/* ── Scroll progress bar ── */}
       <motion.div
         className="scroll-progress-bar"
@@ -478,7 +478,7 @@ const LandingPage: React.FC = () => {
       </AnimatePresence>
 
       {/* ══════════════════════════════════════════════════════ HERO (Scroll-driven unboxing) */}
-      <HeroSection />
+      <FilmSequenceHero />
 
       {/* ══════════════════════════════════════════════════════ STATS STRIP */}
       <section className="ap-stats-strip py-14">
