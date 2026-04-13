@@ -37,7 +37,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BackToTop } from "@/components/BackToTop";
-import { UnboxingHero } from "@/components/Hero/UnboxingHero";
+import { HeroSection } from "@/components/Hero/HeroSection";
 
 /* ─── Data ─── */
 
@@ -478,7 +478,7 @@ const LandingPage: React.FC = () => {
       </AnimatePresence>
 
       {/* ══════════════════════════════════════════════════════ HERO (Scroll-driven unboxing) */}
-      <UnboxingHero />
+      <HeroSection />
 
       {/* ══════════════════════════════════════════════════════ STATS STRIP */}
       <section className="ap-stats-strip py-14">
