@@ -1,0 +1,190 @@
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* hero.css — Apple-inspired landing page hero styles                          */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Unboxing Hero Root ── */
+.unboxing-root {
+  position: relative;
+  background: #ffffff;
+  overflow-x: hidden;
+}
+
+/* Soft radial light above the scene */
+.unboxing-light {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 90% 55% at 50% -8%,
+    rgba(0, 113, 227, 0.04) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+/* ── Box Illustration ── */
+.product-box-body {
+  background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F7 100%);
+  border: 1.5px solid #E8E8ED;
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.8) inset,
+    0 12px 60px rgba(0,0,0,0.07),
+    0 2px 8px rgba(0,0,0,0.04);
+}
+
+.product-box-lid {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8F8FA 100%);
+  border: 1.5px solid #E2E2E7;
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.9) inset,
+    0 4px 20px rgba(0,0,0,0.06);
+}
+
+/* Tissue paper inside box */
+.box-tissue {
+  background: linear-gradient(
+    160deg,
+    rgba(255,255,255,0.9) 0%,
+    #F0F0F4 100%
+  );
+  border-bottom: 1px solid #E8E8ED;
+}
+
+/* ── Camera Drop Shadow ── */
+.camera-surface-shadow {
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.9);
+  filter: blur(22px);
+}
+
+/* ── Scroll indicator ── */
+@keyframes scroll-hint-fade {
+  0%, 100% { opacity: 0.5; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(6px); }
+}
+.scroll-hint-line {
+  width: 1px;
+  height: 44px;
+  background: linear-gradient(180deg, #aeaeb2, transparent);
+  margin: 0 auto;
+  animation: scroll-hint-fade 2s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+
+/* ── Headline Reveal ── */
+.ap-hero-headline {
+  font-family: system-ui, -apple-system, 'SF Pro Display', 'Inter', sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  color: #1D1D1F;
+}
+.ap-hero-accent {
+  color: #0071E3;
+}
+
+/* ── After Hero — Stats Strip ── */
+.ap-stats-strip {
+  background: #F5F5F7;
+  border-top: 1px solid #E8E8ED;
+  border-bottom: 1px solid #E8E8ED;
+}
+
+/* ── How It Works progress line ── */
+.hiw-track {
+  position: relative;
+}
+.hiw-track::before {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #E8E8ED;
+}
+.hiw-progress {
+  position: absolute;
+  left: 24px;
+  top: 0;
+  width: 1px;
+  background: #0071E3;
+  transition: height 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.hiw-step-num {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid #E8E8ED;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #aeaeb2;
+  transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+.hiw-step-num.active {
+  background: #0071E3;
+  border-color: #0071E3;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0,113,227,0.3);
+}
+
+/* ── Equipment Showcase ── */
+.equip-img-wrap {
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+}
+
+/* ── Security badges ── */
+.security-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  border: 1px solid #E8E8ED;
+  background: #fff;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1D1D1F;
+}
+
+/* ── Testimonial strip ── */
+@keyframes marquee-slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee-slide 28s linear infinite;
+}
+.marquee-wrap:hover .marquee-track { animation-play-state: paused; }
+
+/* ── Pricing toggle ── */
+.billing-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 12px;
+  border: 1px solid #E8E8ED;
+  background: #F5F5F7;
+  padding: 4px;
+}
+.billing-toggle-btn {
+  border-radius: 8px;
+  padding: 6px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6e6e73;
+  transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.billing-toggle-btn.active {
+  background: #fff;
+  color: #1D1D1F;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
