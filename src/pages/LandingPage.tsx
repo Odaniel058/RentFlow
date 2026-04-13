@@ -351,7 +351,7 @@ const LandingPage: React.FC = () => {
   ];
 
   return (
-    <div ref={containerRef} className="min-h-screen" style={{ color: "#1D1D1F", background: "#050505", overflowX: "clip" }}>
+    <div ref={containerRef} className="min-h-screen overflow-x-hidden" style={{ color: "#1D1D1F", background: "#050505" }}>
       {/* ── Scroll progress bar ── */}
       <motion.div
         className="scroll-progress-bar"
