@@ -2,7 +2,6 @@
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Search,
   Plus,
   Package,
   Pencil,
@@ -24,6 +23,7 @@ import { Equipment, EquipmentStatus } from "@/data/mock-data";
 import { formatCurrency } from "@/lib/format";
 import { EquipmentQRCode } from "@/components/EquipmentQRCode";
 import { getInventoryCategoryOptions, getOperationalEquipmentStatus, INVENTORY_STATUS_OPTIONS } from "@/lib/inventory";
+import { AdvancedEquipmentSearch } from "@/components/AdvancedEquipmentSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const emptyForm: Omit<Equipment, "id"> = {
   name: "",
@@ -58,6 +59,7 @@ const emptyForm: Omit<Equipment, "id"> = {
 
 const InventoryPage: React.FC = () => {
   const { state, upsertEquipment, deleteEquipment } = useAppData();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todas");
   const [brand, setBrand] = useState("Todas");
@@ -393,52 +395,22 @@ const InventoryPage: React.FC = () => {
 
         <section className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
           <div className="space-y-6">
-            <div className="glass-card p-4 premium-shadow">
-              <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome, modelo ou serie..."
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <select value={category} onChange={(event) => setCategory(event.target.value)} className="h-10 rounded-xl border border-input bg-background px-3 text-sm">
-                    {categories.map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
-                  <select value={brand} onChange={(event) => setBrand(event.target.value)} className="h-10 rounded-xl border border-input bg-background px-3 text-sm">
-                    {brands.map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {["Todos", ...INVENTORY_STATUS_OPTIONS.map((item) => item.value)].map((item) => {
-                  const active = status === item;
-                  const label = item === "Todos" ? "Todos" : INVENTORY_STATUS_OPTIONS.find((option) => option.value === item)?.label ?? item;
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setStatus(item)}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
-                        active
-                          ? "border-primary/30 bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                          : "border-border/60 bg-surface/50 text-muted-foreground hover:border-primary/20 hover:text-foreground"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {user && (
+              <AdvancedEquipmentSearch
+                search={search}
+                onSearchChange={setSearch}
+                category={category}
+                onCategoryChange={setCategory}
+                brand={brand}
+                onBrandChange={setBrand}
+                status={status}
+                onStatusChange={setStatus}
+                categories={categories}
+                brands={brands}
+                resultCount={filtered.length}
+                tenantId={user.tenantId}
+              />
+            )}
 
             <div className="glass-card premium-shadow overflow-hidden">
               <div className="border-b border-border/60 px-5 py-4">
